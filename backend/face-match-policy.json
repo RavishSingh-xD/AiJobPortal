@@ -1,0 +1,25 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["rekognition:CompareFaces"],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::/verification/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["dynamodb:GetItem", "dynamodb:UpdateItem"],
+      "Resource": "arn:aws:dynamodb:ap-south-1::table/Users"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "cognito-idp:AdminUpdateUserAttributes",
+      "Resource": ""
+    }
+  ]
+}
