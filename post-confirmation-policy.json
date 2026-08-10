@@ -1,0 +1,20 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "dynamodb:GetItem",
+      "Resource": "arn:aws:dynamodb:ap-south-1:470361396576:table/CollegeDomains"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "dynamodb:PutItem",
+      "Resource": "arn:aws:dynamodb:ap-south-1:470361396576:table/Users"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "cognito-idp:AdminUpdateUserAttributes",
+      "Resource": "arn:aws:cognito-idp:ap-south-1:470361396576:userpool/ap-south-1_s0f7Kwug8"
+    }
+  ]
+}
