@@ -65,6 +65,19 @@ export async function logoutUser() {
   return signOut();
 }
 
+export async function getIdToken() {
+  try {
+    const session = await fetchAuthSession();
+    const idToken = session.tokens?.idToken;
+    if (!idToken) {
+      return null;
+    }
+    return idToken.toString();
+  } catch {
+    return null;
+  }
+}
+
 export async function getAuthenticatedUser() {
   return getCurrentUser();
 }

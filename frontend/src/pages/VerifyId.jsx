@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserProfile } from "../services/authService";
@@ -44,7 +44,54 @@ export default function VerifyId() {
   const [idCard, setIdCard] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [phase, setPhase] = useState("form");
+  const pollCountRef = useRef(0);
+  const pollTimerRef = useRef(null);
+
+  const stopPolling = () => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return stopPolling;
+  }, []);
+
+  const startPolling = () => {
+    stopPolling();
+    pollCountRef.current = 0;
+    setPhase("polling");
+
+    pollTimerRef.current = setInterval(async () => {
+      pollCountRef.current += 1;
+
+      try {
+        const profile = await getUserProfile();
+        const status = profile.verificationStatus;
+
+        if (status === "verified") {
+          stopPolling();
+          setPhase("verified");
+          return;
+        }
+
+        if (status === "rejected") {
+          stopPolling();
+          setPhase("rejected");
+          return;
+        }
+      } catch {
+        // Transient failure — retry on next tick unless cap is reached
+      }
+
+      if (pollCountRef.current >= 40) {
+        stopPolling();
+        setPhase("timeout");
+      }
+    }, 3000);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -64,7 +111,7 @@ export default function VerifyId() {
       const idCardUrl = await requestUploadUrl(userId, "id_card");
       await uploadFileToS3(idCardUrl.uploadUrl, idCard);
 
-      setSubmitted(true);
+      startPolling();
     } catch (err) {
       setError(err.message || "Upload failed. Please try again.");
     } finally {
@@ -77,27 +124,7 @@ export default function VerifyId() {
       <div className="page-inner page-inner--wide">
         <GlassCard>
           <AnimatePresence mode="wait">
-            {submitted ? (
-              <motion.div
-                key="success"
-                className="success-state"
-                variants={successVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                <div className="success-state__icon" aria-hidden="true">
-                  ✓
-                </div>
-                <h2 className="success-state__title">Verification submitted</h2>
-                <p className="success-state__text">
-                  Your documents are under review. We&apos;ll notify you once
-                  your identity has been verified.
-                </p>
-                <AnimatedButton onClick={() => navigate("/dashboard")}>
-                  Go to dashboard
-                </AnimatedButton>
-              </motion.div>
-            ) : (
+            {phase === "form" && (
               <motion.div
                 key="form"
                 initial={{ opacity: 1 }}
@@ -147,6 +174,100 @@ export default function VerifyId() {
                     {loading ? "Uploading…" : "Submit for review"}
                   </AnimatedButton>
                 </form>
+              </motion.div>
+            )}
+
+            {phase === "polling" && (
+              <motion.div
+                key="polling"
+                className="success-state"
+                variants={successVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className="success-state__icon" aria-hidden="true">
+                  ⏳
+                </div>
+                <h2 className="success-state__title">Verifying your identity</h2>
+                <p className="success-state__text">
+                  Your selfie and ID card are being compared automatically.
+                  This usually takes just a few seconds.
+                </p>
+              </motion.div>
+            )}
+
+            {phase === "verified" && (
+              <motion.div
+                key="verified"
+                className="success-state"
+                variants={successVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className="success-state__icon" aria-hidden="true">
+                  ✓
+                </div>
+                <h2 className="success-state__title">You&apos;re verified</h2>
+                <p className="success-state__text">
+                  Your identity has been confirmed. You can now apply for
+                  internships on AiJobPortal.
+                </p>
+                <AnimatedButton onClick={() => navigate("/dashboard")}>
+                  Go to dashboard
+                </AnimatedButton>
+              </motion.div>
+            )}
+
+            {phase === "rejected" && (
+              <motion.div
+                key="rejected"
+                className="success-state"
+                variants={successVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className="success-state__icon" aria-hidden="true">
+                  ✕
+                </div>
+                <h2 className="success-state__title">
+                  We couldn&apos;t verify your identity
+                </h2>
+                <p className="success-state__text">
+                  Your selfie and ID photo didn&apos;t match, or the images
+                  weren&apos;t clear enough. Try again with a well-lit,
+                  front-facing selfie and a clear photo of your ID card.
+                </p>
+                <AnimatedButton
+                  onClick={() => {
+                    setSelfie(null);
+                    setIdCard(null);
+                    setPhase("form");
+                  }}
+                >
+                  Try again
+                </AnimatedButton>
+              </motion.div>
+            )}
+
+            {phase === "timeout" && (
+              <motion.div
+                key="timeout"
+                className="success-state"
+                variants={successVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className="success-state__icon" aria-hidden="true">
+                  ⏳
+                </div>
+                <h2 className="success-state__title">Still processing</h2>
+                <p className="success-state__text">
+                  Verification is taking longer than usual. Check your dashboard
+                  shortly for an update on your status.
+                </p>
+                <AnimatedButton onClick={() => navigate("/dashboard")}>
+                  Go to dashboard
+                </AnimatedButton>
               </motion.div>
             )}
           </AnimatePresence>
