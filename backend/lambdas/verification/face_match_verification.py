@@ -16,12 +16,10 @@ Decision logic:
     - Rekognition runs successfully but finds no match, or similarity is
       below threshold -> rejected (genuine mismatch).
     - Rekognition CANNOT PROCESS the images at all (no face detected in
-      either image, image too small/corrupt, etc.) -> manual_review, NOT
-      rejected. This distinction matters: a processing failure (bad photo
-      quality) is not evidence the person is lying, and auto-rejecting on
-      technical failure would incorrectly lock out legitimate students
-      over a blurry photo. Only a completed comparison with low similarity
-      counts as a genuine mismatch.
+      either image, image too small/corrupt, etc.) -> rejected with a
+      distinct reason (e.g. face_not_detected). The status is still
+      rejected for Cognito/DynamoDB, but the reason field preserves that
+      this was a processing failure rather than a low-similarity mismatch.
 
 Required IAM permissions (faceMatchVerificationRole):
     rekognition:CompareFaces
@@ -86,7 +84,7 @@ def _run_face_comparison(bucket: str, user_id: str):
     """
     Runs CompareFaces between the two uploaded images.
     Returns a tuple: (status, similarity_or_none, reason)
-      status is one of "verified", "rejected", "manual_review"
+      status is one of "verified" or "rejected"
     """
     selfie_key = f"verification/{user_id}/selfie.jpg"
     id_card_key = f"verification/{user_id}/id_card.jpg"
@@ -103,9 +101,9 @@ def _run_face_comparison(bucket: str, user_id: str):
             # Most commonly: no face detected in one of the images.
             # This is a processing failure, not evidence of a mismatch.
             logger.warning("Rekognition could not process images for userId=%s: %s", user_id, error_code)
-            return "manual_review", None, "face_not_detected"
+            return "rejected", None, "face_not_detected"
         logger.error("Rekognition CompareFaces failed for userId=%s: %s", user_id, error_code)
-        return "manual_review", None, f"rekognition_error:{error_code}"
+        return "rejected", None, f"rekognition_error:{error_code}"
 
     face_matches = response.get("FaceMatches", [])
 
@@ -140,8 +138,8 @@ def _update_user_record(user_id: str, status: str, similarity, reason: str):
     )
 
 
-def _sync_cognito_if_verified(user_id: str, status: str):
-    if status != "verified":
+def _sync_cognito_verification_status(user_id: str, status: str):
+    if status not in ("verified", "rejected"):
         return
 
     get_response = _users_table.get_item(Key={"userId": user_id})
@@ -151,10 +149,14 @@ def _sync_cognito_if_verified(user_id: str, status: str):
         return
 
     email = user_item.get("email")
+    if not email or not isinstance(email, str):
+        logger.warning("Users record for userId=%s has no email; skipping Cognito sync", user_id)
+        return
+
     _cognito.admin_update_user_attributes(
         UserPoolId=USER_POOL_ID,
         Username=email,
-        UserAttributes=[{"Name": "custom:verification_status", "Value": "verified"}],
+        UserAttributes=[{"Name": "custom:verification_status", "Value": status}],
     )
 
 
@@ -187,7 +189,7 @@ def lambda_handler(event, context):
 
         try:
             _update_user_record(user_id, status, similarity, reason)
-            _sync_cognito_if_verified(user_id, status)
+            _sync_cognito_verification_status(user_id, status)
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code", "Unknown")
             logger.error("Failed to persist result for userId=%s: %s", user_id, error_code)

@@ -22,6 +22,13 @@ export async function requestUploadUrl(userId, fileType) {
   return data;
 }
 
+export async function listJobs(domain, options = {}) {
+  const { data } = await api.get("/jobs", {
+    params: { domain, ...options },
+  });
+  return data;
+}
+
 export async function uploadFileToS3(uploadUrl, file) {
   await axios.put(uploadUrl, file, {
     headers: { "Content-Type": "image/jpeg" },

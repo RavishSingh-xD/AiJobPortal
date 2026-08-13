@@ -346,6 +346,30 @@ body {
   cursor: not-allowed;
 }
 
+/* Shared filter bar controls — normalizes <select> vs <input> sizing */
+.filter-input {
+  height: calc(0.875rem * 2 + 1.25rem);
+  min-height: calc(0.875rem * 2 + 1.25rem);
+  line-height: 1.25rem;
+  box-sizing: border-box;
+}
+
+select.filter-input {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.09);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2393c5fd' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.125rem center;
+  padding-right: 2.75rem;
+}
+
+select.filter-input option {
+  color: #0f2447;
+  background: #ffffff;
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;

@@ -25,7 +25,7 @@ def make_s3_event(bucket, key):
 @patch.object(fmv, "VERIFICATION_BUCKET", "test-bucket")
 @patch.object(fmv, "USER_POOL_ID", "ap-south-1_TESTPOOL")
 def test_high_similarity_match_verifies_and_syncs_cognito(mock_s3, mock_rekognition, mock_users_table, mock_cognito):
-    mock_s3.head_object.return_value = {}  # both files "exist"
+    mock_s3.head_object.return_value = {}
     mock_rekognition.compare_faces.return_value = {
         "FaceMatches": [{"Similarity": 96.5, "Face": {}}]
     }
@@ -42,6 +42,9 @@ def test_high_similarity_match_verifies_and_syncs_cognito(mock_s3, mock_rekognit
 
     cognito_kwargs = mock_cognito.admin_update_user_attributes.call_args.kwargs
     assert cognito_kwargs["Username"] == "student@iitb.ac.in"
+    assert cognito_kwargs["UserAttributes"] == [
+        {"Name": "custom:verification_status", "Value": "verified"}
+    ]
 
 
 @patch.object(fmv, "_cognito")
@@ -50,17 +53,23 @@ def test_high_similarity_match_verifies_and_syncs_cognito(mock_s3, mock_rekognit
 @patch.object(fmv, "_s3")
 @patch.object(fmv, "VERIFICATION_BUCKET", "test-bucket")
 @patch.object(fmv, "USER_POOL_ID", "ap-south-1_TESTPOOL")
-def test_low_similarity_rejects_without_cognito_sync(mock_s3, mock_rekognition, mock_users_table, mock_cognito):
+def test_low_similarity_rejects_and_syncs_cognito(mock_s3, mock_rekognition, mock_users_table, mock_cognito):
     mock_s3.head_object.return_value = {}
     mock_rekognition.compare_faces.return_value = {
         "FaceMatches": [{"Similarity": 42.0, "Face": {}}]
     }
+    mock_users_table.get_item.return_value = {"Item": {"email": "student@iitb.ac.in"}}
 
     event = make_s3_event("test-bucket", "verification/user-2/id_card.jpg")
     result = fmv.lambda_handler(event, None)
 
     assert result["results"][0]["status"] == "rejected"
-    mock_cognito.admin_update_user_attributes.assert_not_called()
+    assert result["results"][0]["reason"] == "match_below_threshold"
+
+    cognito_kwargs = mock_cognito.admin_update_user_attributes.call_args.kwargs
+    assert cognito_kwargs["UserAttributes"] == [
+        {"Name": "custom:verification_status", "Value": "rejected"}
+    ]
 
 
 @patch.object(fmv, "_cognito")
@@ -72,6 +81,7 @@ def test_low_similarity_rejects_without_cognito_sync(mock_s3, mock_rekognition, 
 def test_no_face_matches_found_rejects(mock_s3, mock_rekognition, mock_users_table, mock_cognito):
     mock_s3.head_object.return_value = {}
     mock_rekognition.compare_faces.return_value = {"FaceMatches": []}
+    mock_users_table.get_item.return_value = {"Item": {"email": "student@iitb.ac.in"}}
 
     event = make_s3_event("test-bucket", "verification/user-3/selfie.jpg")
     result = fmv.lambda_handler(event, None)
@@ -86,7 +96,7 @@ def test_no_face_matches_found_rejects(mock_s3, mock_rekognition, mock_users_tab
 @patch.object(fmv, "_s3")
 @patch.object(fmv, "VERIFICATION_BUCKET", "test-bucket")
 @patch.object(fmv, "USER_POOL_ID", "ap-south-1_TESTPOOL")
-def test_no_face_detected_goes_to_manual_review_not_rejected(mock_s3, mock_rekognition, mock_users_table, mock_cognito):
+def test_no_face_detected_rejects_with_face_not_detected_reason(mock_s3, mock_rekognition, mock_users_table, mock_cognito):
     from botocore.exceptions import ClientError
 
     mock_s3.head_object.return_value = {}
@@ -94,14 +104,41 @@ def test_no_face_detected_goes_to_manual_review_not_rejected(mock_s3, mock_rekog
         {"Error": {"Code": "InvalidParameterException", "Message": "no face detected"}},
         "CompareFaces"
     )
+    mock_users_table.get_item.return_value = {"Item": {"email": "student@iitb.ac.in"}}
 
     event = make_s3_event("test-bucket", "verification/user-4/selfie.jpg")
     result = fmv.lambda_handler(event, None)
 
-    # Critical: must NOT be "rejected" -- a processing failure isn't evidence of a mismatch
-    assert result["results"][0]["status"] == "manual_review"
+    assert result["results"][0]["status"] == "rejected"
     assert result["results"][0]["reason"] == "face_not_detected"
-    mock_cognito.admin_update_user_attributes.assert_not_called()
+
+    cognito_kwargs = mock_cognito.admin_update_user_attributes.call_args.kwargs
+    assert cognito_kwargs["UserAttributes"] == [
+        {"Name": "custom:verification_status", "Value": "rejected"}
+    ]
+
+
+@patch.object(fmv, "_cognito")
+@patch.object(fmv, "_users_table")
+@patch.object(fmv, "_rekognition")
+@patch.object(fmv, "_s3")
+@patch.object(fmv, "VERIFICATION_BUCKET", "test-bucket")
+@patch.object(fmv, "USER_POOL_ID", "ap-south-1_TESTPOOL")
+def test_other_rekognition_error_rejects_with_rekognition_error_reason(mock_s3, mock_rekognition, mock_users_table, mock_cognito):
+    from botocore.exceptions import ClientError
+
+    mock_s3.head_object.return_value = {}
+    mock_rekognition.compare_faces.side_effect = ClientError(
+        {"Error": {"Code": "ThrottlingException", "Message": "rate exceeded"}},
+        "CompareFaces"
+    )
+    mock_users_table.get_item.return_value = {"Item": {"email": "student@iitb.ac.in"}}
+
+    event = make_s3_event("test-bucket", "verification/user-4b/selfie.jpg")
+    result = fmv.lambda_handler(event, None)
+
+    assert result["results"][0]["status"] == "rejected"
+    assert result["results"][0]["reason"].startswith("rekognition_error:")
 
 
 @patch.object(fmv, "_rekognition")
@@ -132,17 +169,14 @@ def test_only_one_file_uploaded_does_not_process_yet(mock_s3, mock_rekognition):
 @patch.object(fmv, "VERIFICATION_BUCKET", "test-bucket")
 @patch.object(fmv, "USER_POOL_ID", "ap-south-1_TESTPOOL")
 def test_verified_but_no_users_record_does_not_crash(mock_s3, mock_rekognition, mock_users_table, mock_cognito):
-    # Simulates a userId with no corresponding Users item (e.g. test data,
-    # or a real edge case where the record is somehow missing) -- should
-    # log and skip the Cognito sync, not raise.
     mock_s3.head_object.return_value = {}
     mock_rekognition.compare_faces.return_value = {
         "FaceMatches": [{"Similarity": 99.0, "Face": {}}]
     }
-    mock_users_table.get_item.return_value = {}  # no "Item" key
+    mock_users_table.get_item.return_value = {}
 
     event = make_s3_event("test-bucket", "verification/nonexistent-user/selfie.jpg")
-    result = fmv.lambda_handler(event, None)  # should not raise
+    result = fmv.lambda_handler(event, None)
 
     assert result["results"][0]["status"] == "verified"
     mock_cognito.admin_update_user_attributes.assert_not_called()
@@ -159,12 +193,30 @@ def test_verified_but_missing_email_does_not_crash(mock_s3, mock_rekognition, mo
     mock_rekognition.compare_faces.return_value = {
         "FaceMatches": [{"Similarity": 99.0, "Face": {}}]
     }
-    mock_users_table.get_item.return_value = {"Item": {"userId": "user-6"}}  # no email field
+    mock_users_table.get_item.return_value = {"Item": {"userId": "user-6"}}
 
     event = make_s3_event("test-bucket", "verification/user-6/selfie.jpg")
-    result = fmv.lambda_handler(event, None)  # should not raise
+    result = fmv.lambda_handler(event, None)
 
     assert result["results"][0]["status"] == "verified"
+    mock_cognito.admin_update_user_attributes.assert_not_called()
+
+
+@patch.object(fmv, "_cognito")
+@patch.object(fmv, "_users_table")
+@patch.object(fmv, "_rekognition")
+@patch.object(fmv, "_s3")
+@patch.object(fmv, "VERIFICATION_BUCKET", "test-bucket")
+@patch.object(fmv, "USER_POOL_ID", "ap-south-1_TESTPOOL")
+def test_rejected_but_missing_email_does_not_call_cognito(mock_s3, mock_rekognition, mock_users_table, mock_cognito):
+    mock_s3.head_object.return_value = {}
+    mock_rekognition.compare_faces.return_value = {"FaceMatches": []}
+    mock_users_table.get_item.return_value = {"Item": {"userId": "user-7"}}
+
+    event = make_s3_event("test-bucket", "verification/user-7/selfie.jpg")
+    result = fmv.lambda_handler(event, None)
+
+    assert result["results"][0]["status"] == "rejected"
     mock_cognito.admin_update_user_attributes.assert_not_called()
 
 

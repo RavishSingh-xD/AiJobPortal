@@ -6,6 +6,7 @@ import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import VerifyId from "./pages/VerifyId";
 import Dashboard from "./pages/Dashboard";
+import JobListings from "./pages/JobListings";
 
 function ProtectedRoute({ children }) {
   const [checking, setChecking] = useState(true);
@@ -45,8 +46,8 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.pathname}>
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/jobs" element={<JobListings />} />
         <Route
-          path="/verify-id"
           element={
             <ProtectedRoute>
               <VerifyId />

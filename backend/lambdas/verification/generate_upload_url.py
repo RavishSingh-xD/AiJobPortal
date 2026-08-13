@@ -6,9 +6,12 @@ Handler: generate_upload_url.lambda_handler
 
 Expected request (API Gateway proxy integration, JSON body):
     {
-        "userId": "<cognito sub>",
         "fileType": "selfie" | "id_card"
     }
+
+The authenticated user's Cognito sub is taken from the API Gateway JWT
+authorizer claims (requestContext.authorizer.jwt.claims.sub). Any userId
+in the request body is ignored.
 
 Response (200):
     {
@@ -68,6 +71,24 @@ def _response(status_code: int, body_dict: dict):
     }
 
 
+def _get_authenticated_user_id(event):
+    try:
+        user_id = (
+            event.get("requestContext", {})
+            .get("authorizer", {})
+            .get("jwt", {})
+            .get("claims", {})
+            .get("sub")
+        )
+    except (AttributeError, TypeError):
+        return None
+
+    if not user_id or not isinstance(user_id, str):
+        return None
+
+    return user_id
+
+
 def lambda_handler(event, context):
     if VERIFICATION_BUCKET is None:
         logger.error("VERIFICATION_BUCKET environment variable is not set")
@@ -78,17 +99,17 @@ def lambda_handler(event, context):
     except (json.JSONDecodeError, TypeError):
         return _response(400, {"error": "Request body must be valid JSON"})
 
-    user_id = body.get("userId")
     file_type = body.get("fileType")
-
-    if not user_id or not isinstance(user_id, str):
-        return _response(400, {"error": "userId is required"})
 
     if file_type not in ALLOWED_FILE_TYPES:
         return _response(
             400,
             {"error": f"fileType must be one of: {', '.join(sorted(ALLOWED_FILE_TYPES))}"},
         )
+
+    user_id = _get_authenticated_user_id(event)
+    if user_id is None:
+        return _response(401, {"error": "Unauthorized"})
 
     key = f"verification/{user_id}/{file_type}.jpg"
 

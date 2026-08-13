@@ -10,54 +10,87 @@ import json
 from unittest.mock import patch
 from lambdas.verification import generate_upload_url
 
+USER_A = "USER_A"
+USER_B = "USER_B"
 
-def make_event(body_dict):
-    return {"body": json.dumps(body_dict)}
+
+def make_event(body_dict, sub=USER_A):
+    event = {"body": json.dumps(body_dict)}
+    if sub is not None:
+        event["requestContext"] = {
+            "authorizer": {
+                "jwt": {
+                    "claims": {
+                        "sub": sub,
+                    }
+                }
+            }
+        }
+    return event
 
 
 @patch.object(generate_upload_url, "_s3")
 @patch.object(generate_upload_url, "VERIFICATION_BUCKET", "test-bucket")
-def test_valid_selfie_request_returns_url(mock_s3):
+def test_valid_jwt_selfie_returns_url_for_jwt_sub(mock_s3):
     mock_s3.generate_presigned_url.return_value = "https://example.com/presigned-url"
 
-    event = make_event({"userId": "user-123", "fileType": "selfie"})
+    event = make_event({"fileType": "selfie"}, sub=USER_A)
     result = generate_upload_url.lambda_handler(event, None)
 
     assert result["statusCode"] == 200
     body = json.loads(result["body"])
     assert body["uploadUrl"] == "https://example.com/presigned-url"
-    assert body["key"] == "verification/user-123/selfie.jpg"
+    assert body["key"] == "verification/USER_A/selfie.jpg"
 
 
 @patch.object(generate_upload_url, "_s3")
 @patch.object(generate_upload_url, "VERIFICATION_BUCKET", "test-bucket")
-def test_valid_id_card_request_returns_url(mock_s3):
+def test_valid_jwt_id_card_returns_url_for_jwt_sub(mock_s3):
     mock_s3.generate_presigned_url.return_value = "https://example.com/presigned-url"
 
-    event = make_event({"userId": "user-123", "fileType": "id_card"})
+    event = make_event({"fileType": "id_card"}, sub=USER_A)
     result = generate_upload_url.lambda_handler(event, None)
 
     assert result["statusCode"] == 200
     body = json.loads(result["body"])
-    assert body["key"] == "verification/user-123/id_card.jpg"
+    assert body["key"] == "verification/USER_A/id_card.jpg"
+
+
+@patch.object(generate_upload_url, "_s3")
+@patch.object(generate_upload_url, "VERIFICATION_BUCKET", "test-bucket")
+def test_body_user_id_is_ignored_in_favor_of_jwt_sub(mock_s3):
+    mock_s3.generate_presigned_url.return_value = "https://example.com/presigned-url"
+
+    event = make_event(
+        {"userId": USER_B, "fileType": "selfie"},
+        sub=USER_A,
+    )
+    result = generate_upload_url.lambda_handler(event, None)
+
+    assert result["statusCode"] == 200
+    body = json.loads(result["body"])
+    assert body["key"] == "verification/USER_A/selfie.jpg"
+    assert USER_B not in body["key"]
+
+
+@patch.object(generate_upload_url, "_s3")
+@patch.object(generate_upload_url, "VERIFICATION_BUCKET", "test-bucket")
+def test_missing_jwt_sub_returns_unauthorized_and_does_not_call_s3(mock_s3):
+    event = make_event({"fileType": "selfie"}, sub=None)
+    result = generate_upload_url.lambda_handler(event, None)
+
+    assert result["statusCode"] == 401
+    assert json.loads(result["body"])["error"] == "Unauthorized"
+    mock_s3.generate_presigned_url.assert_not_called()
 
 
 @patch.object(generate_upload_url, "VERIFICATION_BUCKET", "test-bucket")
 def test_invalid_file_type_rejected():
-    event = make_event({"userId": "user-123", "fileType": "passport_photo"})
+    event = make_event({"fileType": "passport_photo"})
     result = generate_upload_url.lambda_handler(event, None)
 
     assert result["statusCode"] == 400
     assert "fileType" in json.loads(result["body"])["error"]
-
-
-@patch.object(generate_upload_url, "VERIFICATION_BUCKET", "test-bucket")
-def test_missing_user_id_rejected():
-    event = make_event({"fileType": "selfie"})
-    result = generate_upload_url.lambda_handler(event, None)
-
-    assert result["statusCode"] == 400
-    assert "userId" in json.loads(result["body"])["error"]
 
 
 @patch.object(generate_upload_url, "VERIFICATION_BUCKET", "test-bucket")
@@ -70,7 +103,7 @@ def test_malformed_json_body_rejected():
 
 @patch.object(generate_upload_url, "VERIFICATION_BUCKET", None)
 def test_missing_bucket_env_var_returns_500():
-    event = make_event({"userId": "user-123", "fileType": "selfie"})
+    event = make_event({"fileType": "selfie"})
     result = generate_upload_url.lambda_handler(event, None)
 
     assert result["statusCode"] == 500
@@ -86,7 +119,7 @@ def test_s3_error_returns_500(mock_s3):
         "GeneratePresignedUrl"
     )
 
-    event = make_event({"userId": "user-123", "fileType": "selfie"})
+    event = make_event({"fileType": "selfie"})
     result = generate_upload_url.lambda_handler(event, None)
 
     assert result["statusCode"] == 500
