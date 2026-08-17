@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 export default function AnimatedButton({
   children,
@@ -7,6 +7,8 @@ export default function AnimatedButton({
   secondary = false,
   ...props
 }) {
+  const reduced = useReducedMotion();
+  const interactive = !props.disabled && !loading && !reduced;
   const classes = [
     "btn",
     secondary ? "btn--secondary" : "",
@@ -19,9 +21,9 @@ export default function AnimatedButton({
   return (
     <motion.button
       className={classes}
-      whileHover={!props.disabled && !loading ? { scale: 1.02, filter: "brightness(1.08)" } : {}}
-      whileTap={!props.disabled && !loading ? { scale: 0.98 } : {}}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      whileHover={interactive ? { scale: 1.02 } : undefined}
+      whileTap={interactive ? { scale: 0.97 } : undefined}
+      transition={{ type: "spring", stiffness: 420, damping: 32 }}
       disabled={loading || props.disabled}
       {...props}
     >

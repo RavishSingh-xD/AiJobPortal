@@ -1,0 +1,18 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["dynamodb:GetItem", "dynamodb:PutItem"],
+      "Resource": "arn:aws:dynamodb:ap-south-1:470361396576:table/harvest_status"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "ssm:SendCommand",
+      "Resource": [
+        "arn:aws:ec2:ap-south-1:470361396576:instance/i-003c2b31ea26070b4",
+        "arn:aws:ssm:ap-south-1::document/AWS-RunShellScript"
+      ]
+    }
+  ]
+}

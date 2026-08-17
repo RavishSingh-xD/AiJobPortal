@@ -1,11 +1,20 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { listJobs } from "../services/apiClient";
+import {
+  listJobs,
+  createApplication,
+  saveJob,
+  unsaveJob,
+  listSavedJobs,
+} from "../services/apiClient";
 import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
+import NavBar from "../components/NavBar";
+import { LoadingPulse } from "../components/motionConfig";
 
 const DOMAINS = ["Engineering", "Business", "Healthcare"];
 const MAX_SKILL_TAGS = 5;
+const MAX_POLL_ATTEMPTS = 40;
 
 const DOMAIN_SKILL_EXAMPLES = {
   Engineering: "e.g. Python, React, AWS",
@@ -21,6 +30,24 @@ const stateVariants = {
     transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
   },
 };
+
+function apiErrorMessage(err, fallback) {
+  const data = err.response?.data;
+  if (data && typeof data === "object" && data.error) {
+    return data.error;
+  }
+  return err.message || fallback;
+}
+
+function listingToTrackedPayload(job, fallbackDomain) {
+  return {
+    canonicalId: job.canonical_id,
+    jobTitle: job.title,
+    company: job.company,
+    domain: job.domain || fallbackDomain,
+    applyUrl: job.apply_url,
+  };
+}
 
 function SkillTags({ skills }) {
   if (!skills?.length) return null;
@@ -56,7 +83,17 @@ function SkillTags({ skills }) {
   );
 }
 
-function JobCard({ job, index }) {
+function JobCard({
+  job,
+  index,
+  isSaved,
+  applying,
+  saving,
+  applyError,
+  saveError,
+  onApply,
+  onToggleSave,
+}) {
   return (
     <GlassCard className="glass-card--compact" delay={index * 0.05}>
       <h3
@@ -92,21 +129,29 @@ function JobCard({ job, index }) {
       >
         {[job.employment_type, job.source].filter(Boolean).join(" · ")}
       </p>
-      {job.apply_url && (
-        <a
-          href={job.apply_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn"
-          style={{
-            width: "auto",
-            display: "inline-flex",
-            textDecoration: "none",
-          }}
+      <div className="job-card__actions">
+        {job.apply_url && (
+          <AnimatedButton
+            className="btn--compact"
+            loading={applying}
+            disabled={applying}
+            onClick={() => onApply(job)}
+          >
+            {applying ? "Applying…" : "Apply"}
+          </AnimatedButton>
+        )}
+        <AnimatedButton
+          secondary
+          className="btn--compact"
+          loading={saving}
+          disabled={saving || !job.canonical_id}
+          onClick={() => onToggleSave(job)}
         >
-          Apply
-        </a>
-      )}
+          {isSaved ? "Saved" : "Save"}
+        </AnimatedButton>
+      </div>
+      {applyError && <div className="form-error">{applyError}</div>}
+      {saveError && <div className="form-error">{saveError}</div>}
     </GlassCard>
   );
 }
@@ -119,10 +164,93 @@ export default function JobListings() {
   const [nextToken, setNextToken] = useState(null);
   const [uiState, setUiState] = useState("loading");
   const [loadingMore, setLoadingMore] = useState(false);
+  const [harvestMessage, setHarvestMessage] = useState("");
+  const [harvestDomain, setHarvestDomain] = useState("");
+  const [harvestTimedOut, setHarvestTimedOut] = useState(false);
+  const [savedIds, setSavedIds] = useState(() => new Set());
+  const [applyingId, setApplyingId] = useState(null);
+  const [savingId, setSavingId] = useState(null);
+  const [cardErrors, setCardErrors] = useState({});
+  const pollCountRef = useRef(0);
+  const pollTimerRef = useRef(null);
+  const pollParamsRef = useRef(null);
+
+  const stopPolling = () => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return stopPolling;
+  }, []);
+
+  useEffect(() => {
+    async function loadSaved() {
+      try {
+        const data = await listSavedJobs();
+        const ids = (data.savedJobs || []).map((row) => row.canonicalId).filter(Boolean);
+        setSavedIds(new Set(ids));
+      } catch {
+        setSavedIds(new Set());
+      }
+    }
+    loadSaved();
+  }, []);
+
+  const applyJobsResult = (data) => {
+    const fetched = data.jobs ?? [];
+    setJobs(fetched);
+    setNextToken(data.nextToken ?? null);
+    setUiState(fetched.length > 0 ? "results" : "empty");
+  };
+
+  const startHarvestPolling = (params) => {
+    stopPolling();
+    pollCountRef.current = 0;
+    pollParamsRef.current = params;
+    setHarvestTimedOut(false);
+
+    pollTimerRef.current = setInterval(async () => {
+      pollCountRef.current += 1;
+      const { domain: pollDomain, options } = pollParamsRef.current;
+
+      try {
+        const data = await listJobs(pollDomain, options);
+
+        if (data.status === "harvesting") {
+          if (data.message) {
+            setHarvestMessage(data.message);
+          }
+          if (pollCountRef.current >= MAX_POLL_ATTEMPTS) {
+            stopPolling();
+            setHarvestTimedOut(true);
+          }
+          return;
+        }
+
+        if (Array.isArray(data.jobs)) {
+          stopPolling();
+          applyJobsResult(data);
+          return;
+        }
+      } catch {
+        // Transient failure — retry on next tick unless cap is reached
+      }
+
+      if (pollCountRef.current >= MAX_POLL_ATTEMPTS) {
+        stopPolling();
+        setHarvestTimedOut(true);
+      }
+    }, 3000);
+  };
 
   const fetchJobs = useCallback(
     async ({ reset = true, token = null } = {}) => {
       if (reset) {
+        stopPolling();
+        setHarvestTimedOut(false);
         setUiState("loading");
         setJobs([]);
         setNextToken(null);
@@ -143,6 +271,15 @@ export default function JobListings() {
         }
 
         const data = await listJobs(domain, options);
+
+        if (reset && data.status === "harvesting") {
+          setHarvestDomain(data.domain || domain);
+          setHarvestMessage(data.message || "");
+          setUiState("harvesting");
+          startHarvestPolling({ domain, options });
+          return;
+        }
+
         const fetched = data.jobs ?? [];
 
         if (reset) {
@@ -180,10 +317,78 @@ export default function JobListings() {
     }
   };
 
+  const setCardError = (canonicalId, field, message) => {
+    setCardErrors((prev) => ({
+      ...prev,
+      [canonicalId]: { ...prev[canonicalId], [field]: message },
+    }));
+  };
+
+  const handleApply = async (job) => {
+    const canonicalId = job.canonical_id;
+    if (!canonicalId || applyingId) {
+      return;
+    }
+
+    if (job.apply_url) {
+      window.open(job.apply_url, "_blank", "noopener,noreferrer");
+    }
+
+    setApplyingId(canonicalId);
+    setCardError(canonicalId, "apply", "");
+    try {
+      await createApplication(listingToTrackedPayload(job, domain));
+    } catch (err) {
+      setCardError(
+        canonicalId,
+        "apply",
+        apiErrorMessage(err, "Could not record this application.")
+      );
+    } finally {
+      setApplyingId(null);
+    }
+  };
+
+  const handleToggleSave = async (job) => {
+    const canonicalId = job.canonical_id;
+    if (!canonicalId || savingId) {
+      return;
+    }
+
+    setSavingId(canonicalId);
+    setCardError(canonicalId, "save", "");
+    const currentlySaved = savedIds.has(canonicalId);
+    try {
+      if (currentlySaved) {
+        await unsaveJob(canonicalId);
+        setSavedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(canonicalId);
+          return next;
+        });
+      } else {
+        await saveJob(listingToTrackedPayload(job, domain));
+        setSavedIds((prev) => new Set(prev).add(canonicalId));
+      }
+    } catch (err) {
+      setCardError(
+        canonicalId,
+        "save",
+        apiErrorMessage(
+          err,
+          currentlySaved ? "Could not unsave this role." : "Could not save this role."
+        )
+      );
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   return (
     <div className="page page--dashboard">
       <div className="dashboard job-listings">
-        <GlassCard className="glass-card--compact">
+        <NavBar />
+        <GlassCard className="glass-card--compact" hover={false}>
           <div className="glass-card__header" style={{ marginBottom: "1.5rem" }}>
             <h1 className="glass-card__title">Find best roles for you</h1>
             <p className="glass-card__subtitle">
@@ -269,10 +474,42 @@ export default function JobListings() {
                 animate="visible"
                 exit="hidden"
               >
-                <div className="success-state__icon" aria-hidden="true">
-                  ⏳
-                </div>
+                <LoadingPulse>
+                  <div className="success-state__icon" aria-hidden="true">
+                    ⏳
+                  </div>
+                </LoadingPulse>
                 <h2 className="success-state__title">Finding the best roles for you</h2>
+              </motion.div>
+            )}
+
+            {uiState === "harvesting" && (
+              <motion.div
+                key="harvesting"
+                className="success-state"
+                variants={stateVariants}
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+              >
+                <LoadingPulse>
+                  <div className="success-state__icon" aria-hidden="true">
+                    ✨
+                  </div>
+                </LoadingPulse>
+                <h2 className="success-state__title">
+                  Finding {harvestDomain || domain} roles for you
+                </h2>
+                <p className="success-state__text">
+                  {harvestTimedOut
+                    ? "This is taking longer than usual — try searching again in a moment"
+                    : harvestMessage}
+                </p>
+                {harvestTimedOut && (
+                  <AnimatedButton onClick={() => fetchJobs({ reset: true })}>
+                    Try again
+                  </AnimatedButton>
+                )}
               </motion.div>
             )}
 
@@ -327,13 +564,24 @@ export default function JobListings() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                {jobs.map((job, index) => (
-                  <JobCard
-                    key={job.canonical_id ?? `${job.title}-${index}`}
-                    job={job}
-                    index={index}
-                  />
-                ))}
+                {jobs.map((job, index) => {
+                  const id = job.canonical_id;
+                  const errors = cardErrors[id] || {};
+                  return (
+                    <JobCard
+                      key={id ?? `${job.title}-${index}`}
+                      job={job}
+                      index={index}
+                      isSaved={Boolean(id && savedIds.has(id))}
+                      applying={applyingId === id}
+                      saving={savingId === id}
+                      applyError={errors.apply}
+                      saveError={errors.save}
+                      onApply={handleApply}
+                      onToggleSave={handleToggleSave}
+                    />
+                  );
+                })}
               </motion.div>
             )}
           </AnimatePresence>

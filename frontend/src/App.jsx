@@ -7,6 +7,9 @@ import Login from "./pages/Login";
 import VerifyId from "./pages/VerifyId";
 import Dashboard from "./pages/Dashboard";
 import JobListings from "./pages/JobListings";
+import MatchWizard from "./pages/MatchWizard";
+import Applications from "./pages/Applications";
+import SavedJobs from "./pages/SavedJobs";
 
 function ProtectedRoute({ children }) {
   const [checking, setChecking] = useState(true);
@@ -59,6 +62,30 @@ function AnimatedRoutes() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/match"
+          element={
+            <ProtectedRoute>
+              <MatchWizard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/applications"
+          element={
+            <ProtectedRoute>
+              <Applications />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/saved-jobs"
+          element={
+            <ProtectedRoute>
+              <SavedJobs />
             </ProtectedRoute>
           }
         />

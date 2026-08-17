@@ -1,0 +1,37 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "MatchSessionsReadWrite",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:UpdateItem"
+      ],
+      "Resource": "arn:aws:dynamodb:ap-south-1:470361396576:table/match_sessions"
+    },
+    {
+      "Sid": "JobsTablesReadOnly",
+      "Effect": "Allow",
+      "Action": "dynamodb:Scan",
+      "Resource": [
+        "arn:aws:dynamodb:ap-south-1:470361396576:table/jobs_engineering",
+        "arn:aws:dynamodb:ap-south-1:470361396576:table/jobs_business",
+        "arn:aws:dynamodb:ap-south-1:470361396576:table/jobs_healthcare",
+        "arn:aws:dynamodb:ap-south-1:470361396576:table/jobs_design"
+      ]
+    },
+    {
+      "Sid": "GroqSsmAccess",
+      "Effect": "Allow",
+      "Action": "ssm:GetParameter",
+      "Resource": "arn:aws:ssm:ap-south-1:470361396576:parameter/aijobportal/groq-api-key"
+    },
+    {
+      "Sid": "GroqSsmKmsDecrypt",
+      "Effect": "Allow",
+      "Action": "kms:Decrypt",
+      "Resource": "arn:aws:kms:ap-south-1:470361396576:alias/aws/ssm"
+    }
+  ]
+}

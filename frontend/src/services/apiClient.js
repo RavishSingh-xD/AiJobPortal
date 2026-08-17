@@ -29,9 +29,95 @@ export async function listJobs(domain, options = {}) {
   return data;
 }
 
+export async function startMatchSession() {
+  const { data } = await api.post("/match/start");
+  return data;
+}
+
+export async function requestResumeUploadUrl(sessionId, payload) {
+  const { data } = await api.post(
+    `/match/${sessionId}/resume-upload-url`,
+    payload
+  );
+  return data;
+}
+
+export async function getMatchSession(sessionId) {
+  const { data } = await api.get(`/match/${sessionId}`);
+  return data;
+}
+
+export async function startDomainTest(sessionId, payload) {
+  const { data } = await api.post(`/match/${sessionId}/test/start`, payload);
+  return data;
+}
+
+export async function submitTestAnswer(sessionId, payload) {
+  const { data } = await api.post(`/match/${sessionId}/test/answer`, payload);
+  return data;
+}
+
+export async function getMatchedJobs(sessionId) {
+  const { data } = await api.get(`/match/${sessionId}/matches`);
+  return data;
+}
+
+export async function getFinalRecommendation(sessionId) {
+  const { data } = await api.post(`/match/${sessionId}/recommendation`);
+  return data;
+}
+
+export async function createApplication(payload) {
+  const { data } = await api.post("/applications", payload);
+  return data;
+}
+
+export async function listApplications() {
+  const { data } = await api.get("/applications");
+  return data;
+}
+
+export async function saveJob(payload) {
+  const { data } = await api.post("/saved-jobs", payload);
+  return data;
+}
+
+export async function listSavedJobs() {
+  const { data } = await api.get("/saved-jobs");
+  return data;
+}
+
+export async function unsaveJob(canonicalId) {
+  const { data } = await api.delete("/saved-jobs", {
+    params: { canonicalId },
+  });
+  return data;
+}
+
+export async function getProfile() {
+  const { data } = await api.get("/profile");
+  return data;
+}
+
+export async function updateProfile(payload) {
+  const { data } = await api.put("/profile", payload);
+  return data;
+}
+
 export async function uploadFileToS3(uploadUrl, file) {
   await axios.put(uploadUrl, file, {
     headers: { "Content-Type": "image/jpeg" },
+  });
+}
+
+export async function uploadResumeToS3(uploadUrl, file) {
+  const contentType =
+    file.type ||
+    (file.name.toLowerCase().endsWith(".docx")
+      ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      : "application/pdf");
+  await axios.put(uploadUrl, file, {
+    headers: { "Content-Type": contentType },
   });
 }
 

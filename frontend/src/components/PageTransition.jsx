@@ -1,22 +1,26 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useLocation } from "react-router-dom";
+import { EASE_OUT } from "./motionConfig";
 
-const pageVariants = {
-  initial: { opacity: 0, y: 16 },
-  animate: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
-  },
-  exit: {
-    opacity: 0,
-    y: -12,
-    transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] },
-  },
-};
+const DURATION_PAGE = 0.26;
 
 export default function PageTransition({ children }) {
   const location = useLocation();
+  const reduced = useReducedMotion();
+
+  const pageVariants = {
+    initial: reduced ? { opacity: 0 } : { opacity: 0, y: 8 },
+    animate: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: DURATION_PAGE, ease: EASE_OUT },
+    },
+    exit: {
+      opacity: 0,
+      y: reduced ? 0 : -6,
+      transition: { duration: 0.2, ease: EASE_OUT },
+    },
+  };
 
   return (
     <AnimatePresence mode="wait">
