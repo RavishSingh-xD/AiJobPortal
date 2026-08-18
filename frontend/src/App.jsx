@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { getAuthenticatedUser, signOut } from "./services/authService";
+import { getAuthenticatedUser } from "./services/authService";
 import PageTransition from "./components/PageTransition";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
@@ -97,14 +97,6 @@ function AnimatedRoutes() {
 }
 
 export default function App() {
-  useEffect(() => {
-    function handleExit() {
-      signOut();
-    }
-    window.addEventListener("pagehide", handleExit);
-    return () => window.removeEventListener("pagehide", handleExit);
-  }, []);
-
   return (
     <>
       <div className="app-background" aria-hidden="true">
