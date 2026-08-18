@@ -51,6 +51,7 @@ function AnimatedRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/jobs" element={<JobListings />} />
         <Route
+          path="/verify-id"
           element={
             <ProtectedRoute>
               <VerifyId />
