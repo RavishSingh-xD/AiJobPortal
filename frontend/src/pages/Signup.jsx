@@ -37,7 +37,7 @@ export default function Signup() {
           <div className="glass-card__header">
             <h1 className="glass-card__title">Create account</h1>
             <p className="glass-card__subtitle">
-              Join AiJobPortal and start your internship journey
+              Join Avyukt.work and start your internship journey
             </p>
           </div>
 

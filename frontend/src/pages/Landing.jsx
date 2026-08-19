@@ -10,7 +10,7 @@ export default function Landing() {
     <div className="page page--landing">
       <LiquidGlassCanvas />
       <div className="landing">
-        <p className="landing__brand">AiJobPortal</p>
+        <p className="landing__brand">Avyukt.work</p>
         <h1 className="landing__title">See the internships that actually fit you</h1>
         <p className="landing__lede">
           Ranked matches from your resume and a short domain test — then apply

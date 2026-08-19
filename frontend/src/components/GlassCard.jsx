@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { EASE_OUT, DURATION } from "./motionConfig";
 
@@ -21,6 +22,15 @@ export default function GlassCard({
   hover = true,
 }) {
   const reduced = useReducedMotion();
+  const [fineHover, setFineHover] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const sync = () => setFineHover(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
 
   return (
     <motion.div
@@ -30,7 +40,7 @@ export default function GlassCard({
       initial="hidden"
       animate="visible"
       whileHover={
-        !reduced && hover
+        !reduced && hover && fineHover
           ? { y: -2, transition: { type: "spring", stiffness: 420, damping: 32 } }
           : undefined
       }

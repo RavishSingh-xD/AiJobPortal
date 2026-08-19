@@ -53,7 +53,7 @@ export default function Applications() {
           <div className="glass-card__header">
             <h1 className="glass-card__title">Applications</h1>
             <p className="glass-card__subtitle">
-              Roles you&apos;ve applied to from AiJobPortal.
+              Roles you&apos;ve applied to from Avyukt.work.
             </p>
           </div>
         </GlassCard>

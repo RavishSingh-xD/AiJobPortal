@@ -447,8 +447,7 @@ export default function JobListings() {
             </div>
 
             <AnimatedButton
-              className="btn--compact"
-              style={{ width: "auto", flex: "0 0 auto" }}
+              className="btn--compact listings-filters__search"
               onClick={handleSearch}
             >
               Search

@@ -29,12 +29,10 @@ export function MotionListItem({ children, index = 0, className = "" }) {
       className={className}
       initial={reduced ? { opacity: 0 } : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={reduced ? undefined : { scale: 1.02 }}
       transition={{
         duration: DURATION,
         ease: EASE_OUT,
         delay: reduced ? 0 : index * 0.05,
-        scale: { type: "spring", stiffness: 420, damping: 32 },
       }}
     >
       {children}
