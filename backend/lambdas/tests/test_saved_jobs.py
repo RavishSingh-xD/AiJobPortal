@@ -105,11 +105,26 @@ def test_post_missing_canonical_id(saved_jobs_module):
 
 def test_post_invalid_domain(saved_jobs_module):
     result = saved_jobs_module.handler(
-        make_event("POST", valid_saved_job(domain="Finance")),
+        make_event("POST", valid_saved_job(domain="not-a-real-domain")),
         None,
     )
     assert result["statusCode"] == 400
     assert "domain" in json.loads(result["body"])["errors"]
+
+
+def test_post_lowercase_domain_normalized(saved_jobs_module):
+    result = saved_jobs_module.handler(
+        make_event("POST", valid_saved_job(domain="engineering")),
+        None,
+    )
+    assert result["statusCode"] == 201
+    body = json.loads(result["body"])
+    assert body["domain"] == "Engineering"
+
+    stored = saved_jobs_module.saved_jobs_table.get_item(
+        Key={"userId": USER_ID, "canonicalId": "job-1"}
+    )["Item"]
+    assert stored["domain"] == "Engineering"
 
 
 def test_get_no_saved_jobs(saved_jobs_module):

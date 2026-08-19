@@ -11,6 +11,7 @@ import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
 import { LoadingPulse } from "../components/motionConfig";
+import { apiErrorMessage } from "../utils/errors";
 
 const DOMAINS = ["Engineering", "Business", "Healthcare"];
 const MAX_SKILL_TAGS = 5;
@@ -30,14 +31,6 @@ const stateVariants = {
     transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
   },
 };
-
-function apiErrorMessage(err, fallback) {
-  const data = err.response?.data;
-  if (data && typeof data === "object" && data.error) {
-    return data.error;
-  }
-  return err.message || fallback;
-}
 
 function listingToTrackedPayload(job, fallbackDomain) {
   return {

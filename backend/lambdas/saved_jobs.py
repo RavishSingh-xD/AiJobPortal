@@ -25,6 +25,14 @@ SAVED_JOBS_TABLE_NAME = os.environ.get("SAVED_JOBS_TABLE_NAME", "SavedJobs")
 saved_jobs_table = dynamodb.Table(SAVED_JOBS_TABLE_NAME)
 
 VALID_DOMAINS = {"Engineering", "Business", "Healthcare", "Design"}
+_DOMAIN_BY_LOWER = {d.lower(): d for d in VALID_DOMAINS}
+
+
+def _normalize_domain(value):
+    if not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    return _DOMAIN_BY_LOWER.get(stripped.lower(), stripped)
 
 
 def _get_user_id(event: dict) -> str:
@@ -52,7 +60,7 @@ def _handle_post(user_id: str, body: dict) -> dict:
     canonical_id = body.get("canonicalId")
     job_title = body.get("jobTitle")
     company = body.get("company")
-    domain = body.get("domain")
+    domain = _normalize_domain(body.get("domain"))
     apply_url = body.get("applyUrl")
 
     errors = {}

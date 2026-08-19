@@ -16,6 +16,7 @@ import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
 import { EASE_OUT, DURATION, LoadingPulse, MotionListItem } from "../components/motionConfig";
+import { apiErrorMessage } from "../utils/errors";
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 40;
@@ -42,14 +43,6 @@ function wizardStepMotion(reduced) {
     exit: reduced ? { opacity: 0 } : { opacity: 0, x: -24 },
     transition: { duration: DURATION, ease: EASE_OUT },
   };
-}
-
-function apiErrorMessage(err, fallback) {
-  const data = err.response?.data;
-  if (data && typeof data === "object" && data.error) {
-    return data.error;
-  }
-  return err.message || fallback;
 }
 
 function isValidResumeFile(file) {

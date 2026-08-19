@@ -12,6 +12,7 @@ import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
 import { EASE_OUT, DURATION } from "../components/motionConfig";
+import { apiErrorMessage } from "../utils/errors";
 
 function formatVerificationStatus(status) {
   if (!status) return { label: "Unknown", variant: "default" };
@@ -26,14 +27,6 @@ function formatVerificationStatus(status) {
     label: labels[status] ?? status.replace(/_/g, " "),
     variant: labels[status] ? status : "default",
   };
-}
-
-function apiErrorMessage(err, fallback) {
-  const data = err.response?.data;
-  if (data && typeof data === "object" && data.error) {
-    return data.error;
-  }
-  return err.message || fallback;
 }
 
 function StatCard({

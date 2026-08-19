@@ -121,11 +121,26 @@ def test_post_missing_company(applications_module):
 
 def test_post_invalid_domain(applications_module):
     result = applications_module.handler(
-        make_event("POST", valid_application(domain="Finance")),
+        make_event("POST", valid_application(domain="not-a-real-domain")),
         None,
     )
     assert result["statusCode"] == 400
     assert "domain" in json.loads(result["body"])["errors"]
+
+
+def test_post_lowercase_domain_normalized(applications_module):
+    result = applications_module.handler(
+        make_event("POST", valid_application(domain="engineering")),
+        None,
+    )
+    assert result["statusCode"] == 201
+    body = json.loads(result["body"])
+    assert body["domain"] == "Engineering"
+
+    stored = applications_module.applications_table.get_item(
+        Key={"userId": USER_ID, "canonicalId": "job-1"}
+    )["Item"]
+    assert stored["domain"] == "Engineering"
 
 
 def test_post_missing_apply_url(applications_module):
