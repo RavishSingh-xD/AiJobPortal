@@ -1297,6 +1297,15 @@ select.filter-input option {
   margin: 0.35rem 0 0;
 }
 
+.match-listing-card__actions {
+  margin-top: 0.85rem;
+}
+
+.match-listing-card .form-error {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
 .match-skill-tags {
   display: flex;
   flex-wrap: wrap;

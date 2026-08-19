@@ -10,6 +10,7 @@ import {
   submitTestAnswer,
   getMatchedJobs,
   getFinalRecommendation,
+  createApplication,
 } from "../services/apiClient";
 import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
@@ -102,7 +103,24 @@ function SkillTags({ skills }) {
   );
 }
 
-function MatchListingCard({ job, index = 0 }) {
+function listingToTrackedPayload(job, fallbackDomain) {
+  return {
+    canonicalId: job.canonical_id,
+    jobTitle: job.title,
+    company: job.company,
+    domain: job.domain || fallbackDomain,
+    applyUrl: job.apply_url,
+  };
+}
+
+function MatchListingCard({
+  job,
+  index = 0,
+  whyThisFits,
+  applying = false,
+  applyError,
+  onApply,
+}) {
   return (
     <MotionListItem index={index} className="match-listing-card">
       <h3 className="match-listing-card__title">{job.title || "Untitled role"}</h3>
@@ -110,6 +128,23 @@ function MatchListingCard({ job, index = 0 }) {
         {[job.company, job.employment_type].filter(Boolean).join(" · ")}
       </p>
       <SkillTags skills={job.required_skills} />
+      {whyThisFits ? (
+        <p className="match-listing-card__why">{whyThisFits}</p>
+      ) : null}
+      {job.apply_url && onApply ? (
+        <div className="job-card__actions match-listing-card__actions">
+          <AnimatedButton
+            type="button"
+            className="btn--compact"
+            loading={applying}
+            disabled={applying}
+            onClick={() => onApply(job)}
+          >
+            {applying ? "Applying…" : "Apply"}
+          </AnimatedButton>
+        </div>
+      ) : null}
+      {applyError ? <div className="form-error">{applyError}</div> : null}
     </MotionListItem>
   );
 }
@@ -155,6 +190,8 @@ export default function MatchWizard() {
   const [rankedJobs, setRankedJobs] = useState([]);
   const [readinessSummary, setReadinessSummary] = useState("");
   const [explanationsAvailable, setExplanationsAvailable] = useState(true);
+  const [applyingId, setApplyingId] = useState(null);
+  const [applyErrors, setApplyErrors] = useState({});
 
   const pollCountRef = useRef(0);
   const pollTimerRef = useRef(null);
@@ -383,6 +420,38 @@ export default function MatchWizard() {
         apiErrorMessage(err, "Could not load matched jobs. Please try again.")
       );
       setMatchesUiState("error");
+    }
+  };
+
+  const handleApply = async (job) => {
+    const applyUrl = job.apply_url;
+    if (!applyUrl) {
+      return;
+    }
+
+    window.open(applyUrl, "_blank", "noopener,noreferrer");
+
+    const canonicalId = job.canonical_id;
+    if (!canonicalId || applyingId) {
+      return;
+    }
+
+    setApplyingId(canonicalId);
+    setApplyErrors((prev) => ({ ...prev, [canonicalId]: "" }));
+    try {
+      await createApplication(
+        listingToTrackedPayload(job, matchesMeta.domain || testDomain)
+      );
+    } catch (err) {
+      setApplyErrors((prev) => ({
+        ...prev,
+        [canonicalId]: apiErrorMessage(
+          err,
+          "Opened the listing, but could not record this application."
+        ),
+      }));
+    } finally {
+      setApplyingId(null);
     }
   };
 
@@ -936,6 +1005,9 @@ export default function MatchWizard() {
                             key={job.canonical_id || job.title}
                             job={job}
                             index={index}
+                            applying={applyingId === job.canonical_id}
+                            applyError={applyErrors[job.canonical_id]}
+                            onApply={handleApply}
                           />
                         ))}
                       </section>
@@ -948,6 +1020,9 @@ export default function MatchWizard() {
                             key={job.canonical_id || job.title}
                             job={job}
                             index={index}
+                            applying={applyingId === job.canonical_id}
+                            applyError={applyErrors[job.canonical_id]}
+                            onApply={handleApply}
                           />
                         ))}
                       </section>
@@ -1051,26 +1126,17 @@ export default function MatchWizard() {
                         <section className="match-listings__section">
                           <h2 className="match-listings__heading">Ranked roles</h2>
                           {rankedJobs.map((job, index) => (
-                            <MotionListItem
+                            <MatchListingCard
                               key={job.canonical_id || job.title}
+                              job={job}
                               index={index}
-                              className="match-listing-card"
-                            >
-                              <h3 className="match-listing-card__title">
-                                {job.title || "Untitled role"}
-                              </h3>
-                              <p className="match-listing-card__meta">
-                                {[job.company, job.employment_type]
-                                  .filter(Boolean)
-                                  .join(" · ")}
-                              </p>
-                              <SkillTags skills={job.required_skills} />
-                              {explanationsAvailable && job.whyThisFits ? (
-                                <p className="match-listing-card__why">
-                                  {job.whyThisFits}
-                                </p>
-                              ) : null}
-                            </MotionListItem>
+                              whyThisFits={
+                                explanationsAvailable ? job.whyThisFits : ""
+                              }
+                              applying={applyingId === job.canonical_id}
+                              applyError={applyErrors[job.canonical_id]}
+                              onApply={handleApply}
+                            />
                           ))}
                         </section>
                       </div>
