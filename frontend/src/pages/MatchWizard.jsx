@@ -513,7 +513,7 @@ export default function MatchWizard() {
     <div className="page page--dashboard">
       <div className="dashboard">
         <NavBar />
-        <GlassCard hover={false}>
+        <GlassCard hover={false} className="glass-card--section">
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div key="profile" {...stepMotion}>

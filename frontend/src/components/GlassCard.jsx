@@ -31,7 +31,7 @@ export default function GlassCard({
       animate="visible"
       whileHover={
         !reduced && hover
-          ? { scale: 1.02, transition: { type: "spring", stiffness: 420, damping: 32 } }
+          ? { y: -2, transition: { type: "spring", stiffness: 420, damping: 32 } }
           : undefined
       }
     >

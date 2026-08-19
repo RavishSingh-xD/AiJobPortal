@@ -1,33 +1,24 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { loginUser, getUserProfile } from "../services/authService";
+import { requestPasswordReset } from "../services/authService";
 import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 
-export default function Login() {
+export default function ForgotPassword() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await loginUser(email, password);
-      const profile = await getUserProfile();
-      if (
-        profile.verificationType === "manual" &&
-        profile.verificationStatus === "pending_review"
-      ) {
-        navigate("/verify-id");
-      } else {
-        navigate("/dashboard");
-      }
+      await requestPasswordReset(email);
+      navigate("/reset-password", { state: { email } });
     } catch (err) {
-      setError(err.message || "Login failed. Please check your credentials.");
+      setError(err.message || "Could not start a password reset. Try again.");
     } finally {
       setLoading(false);
     }
@@ -38,15 +29,15 @@ export default function Login() {
       <div className="page-inner">
         <GlassCard>
           <div className="glass-card__header">
-            <h1 className="glass-card__title">Welcome back</h1>
+            <h1 className="glass-card__title">Forgot password</h1>
             <p className="glass-card__subtitle">
-              Sign in to access your internship dashboard
+              We&apos;ll email a reset code if this address has an account.
             </p>
           </div>
 
           {error && <div className="form-error">{error}</div>}
 
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label" htmlFor="email">
                 Email
@@ -62,33 +53,13 @@ export default function Login() {
                 disabled={loading}
               />
             </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="password">
-                Password
-              </label>
-              <input
-                id="password"
-                className="form-input"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Your password"
-                required
-                disabled={loading}
-              />
-            </div>
-
             <AnimatedButton type="submit" loading={loading}>
-              {loading ? "Signing in…" : "Log in"}
+              {loading ? "Sending…" : "Send reset code"}
             </AnimatedButton>
           </form>
 
           <p className="form-link">
-            <Link to="/forgot-password">Forgot password?</Link>
-          </p>
-          <p className="form-link">
-            Don&apos;t have an account? <Link to="/signup">Sign up</Link>
+            Remembered it? <Link to="/login">Log in</Link>
           </p>
         </GlassCard>
       </div>

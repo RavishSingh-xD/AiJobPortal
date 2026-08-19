@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { getAuthenticatedUser } from "./services/authService";
 import PageTransition from "./components/PageTransition";
+import Landing from "./pages/Landing";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
+import VerifyEmail from "./pages/VerifyEmail";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import VerifyId from "./pages/VerifyId";
 import Dashboard from "./pages/Dashboard";
 import JobListings from "./pages/JobListings";
@@ -47,8 +51,12 @@ function AnimatedRoutes() {
   return (
     <PageTransition>
       <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<Landing />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/jobs" element={<JobListings />} />
         <Route
           path="/verify-id"

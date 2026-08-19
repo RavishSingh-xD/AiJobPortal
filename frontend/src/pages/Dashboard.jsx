@@ -376,14 +376,14 @@ export default function Dashboard() {
                 Healthcare, and Business.
               </p>
               <div className="dashboard-cta-grid__action">
-                <AnimatedButton onClick={() => navigate("/jobs")}>
+                <AnimatedButton secondary onClick={() => navigate("/jobs")}>
                   Browse Roles
                 </AnimatedButton>
               </div>
             </div>
           </GlassCard>
 
-          <GlassCard className="glass-card--section" delay={0.5}>
+          <GlassCard className="glass-card--section dashboard-cta-card--featured" delay={0.5}>
             <div className="dashboard-coming-soon">
               <div className="dashboard-coming-soon__icon" aria-hidden="true">
                 ✨

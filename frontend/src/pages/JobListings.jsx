@@ -396,14 +396,7 @@ export default function JobListings() {
             </p>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "1rem",
-              alignItems: "flex-end",
-            }}
-          >
+          <div className="listings-filters">
             <div className="form-group" style={{ flex: "1 1 160px", marginBottom: 0 }}>
               <label className="form-label" htmlFor="domain">
                 Domain

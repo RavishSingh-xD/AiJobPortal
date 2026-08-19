@@ -120,7 +120,7 @@ export default function VerifyId() {
   };
 
   return (
-    <div className="page">
+    <div className="page page--auth">
       <div className="page-inner page-inner--wide">
         <GlassCard>
           <AnimatePresence mode="wait">

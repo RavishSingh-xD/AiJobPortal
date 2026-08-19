@@ -1,30 +1,30 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { registerUser } from "../services/authService";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { confirmPasswordReset } from "../services/authService";
 import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 
-export default function Signup() {
+export default function ResetPassword() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const presetEmail =
+    typeof location.state?.email === "string" ? location.state.email : "";
+
+  const [email, setEmail] = useState(presetEmail);
+  const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSignup = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const result = await registerUser(email, password, name);
-      if (result.isSignUpComplete) {
-        navigate("/login");
-      } else {
-        navigate("/verify-email", { state: { email } });
-      }
+      await confirmPasswordReset(email, code, password);
+      navigate("/login");
     } catch (err) {
-      setError(err.message || "Sign up failed. Please try again.");
+      setError(err.message || "Could not reset your password. Check the code.");
     } finally {
       setLoading(false);
     }
@@ -35,31 +35,15 @@ export default function Signup() {
       <div className="page-inner">
         <GlassCard>
           <div className="glass-card__header">
-            <h1 className="glass-card__title">Create account</h1>
+            <h1 className="glass-card__title">Choose a new password</h1>
             <p className="glass-card__subtitle">
-              Join AiJobPortal and start your internship journey
+              Enter the code from your email and a new password.
             </p>
           </div>
 
           {error && <div className="form-error">{error}</div>}
 
-          <form onSubmit={handleSignup}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="name">
-                Full name
-              </label>
-              <input
-                id="name"
-                className="form-input"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Jane Doe"
-                required
-                disabled={loading}
-              />
-            </div>
-
+          <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label" htmlFor="email">
                 Email
@@ -75,10 +59,25 @@ export default function Signup() {
                 disabled={loading}
               />
             </div>
-
+            <div className="form-group">
+              <label className="form-label" htmlFor="code">
+                Reset code
+              </label>
+              <input
+                id="code"
+                className="form-input"
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="6-digit code"
+                required
+                disabled={loading}
+                autoComplete="one-time-code"
+              />
+            </div>
             <div className="form-group">
               <label className="form-label" htmlFor="password">
-                Password
+                New password
               </label>
               <input
                 id="password"
@@ -92,14 +91,13 @@ export default function Signup() {
                 disabled={loading}
               />
             </div>
-
             <AnimatedButton type="submit" loading={loading}>
-              {loading ? "Creating account…" : "Sign up"}
+              {loading ? "Updating…" : "Reset password"}
             </AnimatedButton>
           </form>
 
           <p className="form-link">
-            Already have an account? <Link to="/login">Log in</Link>
+            Back to <Link to="/login">log in</Link>
           </p>
         </GlassCard>
       </div>

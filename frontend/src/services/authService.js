@@ -2,6 +2,9 @@ import { Amplify } from "aws-amplify";
 import {
   signUp,
   confirmSignUp,
+  resendSignUpCode,
+  resetPassword,
+  confirmResetPassword,
   signIn,
   signOut as amplifySignOut,
   getCurrentUser,
@@ -38,6 +41,22 @@ export async function verifyOtp(email, code) {
   return confirmSignUp({
     username: email,
     confirmationCode: code,
+  });
+}
+
+export async function resendSignupCode(email) {
+  return resendSignUpCode({ username: email });
+}
+
+export async function requestPasswordReset(email) {
+  return resetPassword({ username: email });
+}
+
+export async function confirmPasswordReset(email, code, newPassword) {
+  return confirmResetPassword({
+    username: email,
+    confirmationCode: code,
+    newPassword,
   });
 }
 
