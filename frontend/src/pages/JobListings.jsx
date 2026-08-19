@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   listJobs,
-  createApplication,
   saveJob,
   unsaveJob,
   listSavedJobs,
@@ -80,11 +80,9 @@ function JobCard({
   job,
   index,
   isSaved,
-  applying,
   saving,
-  applyError,
   saveError,
-  onApply,
+  onGetMatched,
   onToggleSave,
 }) {
   return (
@@ -123,16 +121,12 @@ function JobCard({
         {[job.employment_type, job.source].filter(Boolean).join(" · ")}
       </p>
       <div className="job-card__actions">
-        {job.apply_url && (
-          <AnimatedButton
-            className="btn--compact"
-            loading={applying}
-            disabled={applying}
-            onClick={() => onApply(job)}
-          >
-            {applying ? "Applying…" : "Apply"}
-          </AnimatedButton>
-        )}
+        <AnimatedButton
+          className="btn--compact"
+          onClick={onGetMatched}
+        >
+          Get Matched
+        </AnimatedButton>
         <AnimatedButton
           secondary
           className="btn--compact"
@@ -143,13 +137,13 @@ function JobCard({
           {isSaved ? "Saved" : "Save"}
         </AnimatedButton>
       </div>
-      {applyError && <div className="form-error">{applyError}</div>}
       {saveError && <div className="form-error">{saveError}</div>}
     </GlassCard>
   );
 }
 
 export default function JobListings() {
+  const navigate = useNavigate();
   const [domain, setDomain] = useState("Engineering");
   const [skill, setSkill] = useState("");
   const [employmentType, setEmploymentType] = useState("");
@@ -161,7 +155,6 @@ export default function JobListings() {
   const [harvestDomain, setHarvestDomain] = useState("");
   const [harvestTimedOut, setHarvestTimedOut] = useState(false);
   const [savedIds, setSavedIds] = useState(() => new Set());
-  const [applyingId, setApplyingId] = useState(null);
   const [savingId, setSavingId] = useState(null);
   const [cardErrors, setCardErrors] = useState({});
   const pollCountRef = useRef(0);
@@ -317,29 +310,8 @@ export default function JobListings() {
     }));
   };
 
-  const handleApply = async (job) => {
-    const canonicalId = job.canonical_id;
-    if (!canonicalId || applyingId) {
-      return;
-    }
-
-    if (job.apply_url) {
-      window.open(job.apply_url, "_blank", "noopener,noreferrer");
-    }
-
-    setApplyingId(canonicalId);
-    setCardError(canonicalId, "apply", "");
-    try {
-      await createApplication(listingToTrackedPayload(job, domain));
-    } catch (err) {
-      setCardError(
-        canonicalId,
-        "apply",
-        apiErrorMessage(err, "Could not record this application.")
-      );
-    } finally {
-      setApplyingId(null);
-    }
+  const handleGetMatched = () => {
+    navigate("/match");
   };
 
   const handleToggleSave = async (job) => {
@@ -558,11 +530,9 @@ export default function JobListings() {
                       job={job}
                       index={index}
                       isSaved={Boolean(id && savedIds.has(id))}
-                      applying={applyingId === id}
                       saving={savingId === id}
-                      applyError={errors.apply}
                       saveError={errors.save}
-                      onApply={handleApply}
+                      onGetMatched={handleGetMatched}
                       onToggleSave={handleToggleSave}
                     />
                   );
