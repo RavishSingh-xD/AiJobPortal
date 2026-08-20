@@ -232,11 +232,14 @@
 }
 
 .home-chip--verified {
+  color: #5eead4;
+  border-color: rgba(45, 212, 191, 0.45);
+}
+
+.home-hero__visual .home-chip--verified {
   position: absolute;
   left: 8%;
   bottom: 12%;
-  color: #5eead4;
-  border-color: rgba(45, 212, 191, 0.45);
 }
 
 .home-hero__title {
@@ -700,7 +703,7 @@
     grid-template-columns: 1fr;
   }
 
-  .home-chip--verified {
+  .home-hero__visual .home-chip--verified {
     position: static;
     margin-top: 0.75rem;
   }
