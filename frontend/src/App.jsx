@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { getAuthenticatedUser } from "./services/authService";
 import PageTransition from "./components/PageTransition";
 import Home from "./pages/Home";
-import Landing from "./pages/Landing";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import VerifyEmail from "./pages/VerifyEmail";
