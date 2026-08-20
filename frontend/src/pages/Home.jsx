@@ -19,7 +19,7 @@ const STEPS = [
   {
     n: "04",
     title: "Discover opportunities",
-    text: "Browse internships and jobs across Engineering, Business, and Healthcare.",
+    text: "Browse opportunities across Engineering, Business, and Healthcare.",
   },
   {
     n: "05",
@@ -121,17 +121,17 @@ export default function Home() {
           <span className="home-chip home-chip--verified">✓ Verified</span>
         </div>
         <div className="home-hero__copy">
-          <p className="home-kicker">AI-powered internship matching</p>
+          <p className="home-kicker">AI-powered opportunity matching</p>
           <h1 className="home-hero__title">
             Find work that actually <span>fits you.</span>
           </h1>
           <p className="home-lede">
-            AI-powered internship matching built around your skills, interests
+            AI-powered opportunity matching built around your skills, interests
             and career goals.
           </p>
           <div className="home-hero__cta">
             <button type="button" className="home-btn home-btn--primary" onClick={goStart}>
-              Find My Internships →
+              Find My Opportunities →
             </button>
             <button type="button" className="home-btn home-btn--ghost" onClick={goHow}>
               See How It Works ↓
@@ -153,7 +153,7 @@ export default function Home() {
         <i>→</i>
         <span className="home-flow__accent">📊 94% Match</span>
         <i>→</i>
-        <span>💼 Internship</span>
+        <span>💼 Opportunity</span>
       </div>
 
       <section className="home-section home-problem">
@@ -161,7 +161,7 @@ export default function Home() {
           <p className="home-kicker home-kicker--accent">The problem</p>
           <h2 className="home-h2">Stop applying randomly.</h2>
           <p className="home-lede">
-            Students spend weeks hunting internships across listings that were
+            Students spend weeks hunting opportunities across listings that were
             never ranked for them — then apply into the dark.
           </p>
           <ul className="home-bullets">
@@ -203,7 +203,7 @@ export default function Home() {
 
       <section className="home-section" id="how-it-works">
         <p className="home-kicker">How Avyukt works</p>
-        <h2 className="home-h2">From profile to internship.</h2>
+        <h2 className="home-h2">From profile to opportunity.</h2>
         <p className="home-lede">
           Six simple steps between you and work that actually fits.
         </p>
@@ -312,7 +312,7 @@ export default function Home() {
             </div>
             <div>
               <dt>Experience</dt>
-              <dd>Internships, projects, and the links that prove it.</dd>
+              <dd>Opportunities, projects, and the links that prove it.</dd>
             </div>
           </dl>
         </div>

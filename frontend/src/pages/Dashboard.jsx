@@ -365,7 +365,7 @@ export default function Dashboard() {
                 Browse roles yourself
               </h2>
               <p className="dashboard-coming-soon__text">
-                Search internships and jobs across Engineering, Design,
+                Search opportunities across Engineering, Design,
                 Healthcare, and Business.
               </p>
               <div className="dashboard-cta-grid__action">

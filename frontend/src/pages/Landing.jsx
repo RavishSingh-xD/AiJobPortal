@@ -11,7 +11,7 @@ export default function Landing() {
       <LiquidGlassCanvas />
       <div className="landing">
         <p className="landing__brand">Avyukt.work</p>
-        <h1 className="landing__title">See the internships that actually fit you</h1>
+        <h1 className="landing__title">See the opportunities that actually fit you</h1>
         <p className="landing__lede">
           Ranked matches from your resume and a short domain test — then apply
           with a profile that already knows who you are.

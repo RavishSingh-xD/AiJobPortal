@@ -410,7 +410,7 @@ export default function MatchWizard() {
       setMatchesUiState(internships.length + jobs.length > 0 ? "ready" : "empty");
     } catch (err) {
       setMatchesError(
-        apiErrorMessage(err, "Could not load matched jobs. Please try again.")
+        apiErrorMessage(err, "Could not load matched opportunities. Please try again.")
       );
       setMatchesUiState("error");
     }
@@ -910,14 +910,14 @@ export default function MatchWizard() {
 
                 <div className="match-next-step">
                   <div className="match-next-step__heading">
-                    <h3 className="match-next-step__title">See matched jobs</h3>
+                    <h3 className="match-next-step__title">See matched opportunities</h3>
                   </div>
                   <p className="success-state__text" style={{ marginBottom: "1rem" }}>
                     Based on your PoW score and domain test, we&apos;ll show
-                    internships and jobs you qualify for.
+                    opportunities you qualify for.
                   </p>
                   <AnimatedButton type="button" onClick={handleLoadMatchedJobs}>
-                    See matched jobs
+                    See matched opportunities
                   </AnimatedButton>
                 </div>
 
@@ -958,7 +958,7 @@ export default function MatchWizard() {
                     </LoadingPulse>
                     <h2 className="success-state__title">Finding matched roles...</h2>
                     <p className="success-state__text">
-                      Checking active internships and jobs against your scores.
+                      Checking active opportunities against your scores.
                     </p>
                   </div>
                 )}

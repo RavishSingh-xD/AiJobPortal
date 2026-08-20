@@ -482,7 +482,7 @@ export default function JobListings() {
                 <div className="success-state__icon" aria-hidden="true">
                   🔍
                 </div>
-                <h2 className="success-state__title">No internships found</h2>
+                <h2 className="success-state__title">No opportunities found</h2>
                 <p className="success-state__text">
                   Try a different domain or skill filter to discover more
                   opportunities.
@@ -504,7 +504,7 @@ export default function JobListings() {
                 </div>
                 <h2 className="success-state__title">Something went wrong</h2>
                 <p className="success-state__text">
-                  We couldn&apos;t load internships right now.
+                  We couldn&apos;t load opportunities right now.
                 </p>
                 <AnimatedButton onClick={() => fetchJobs({ reset: true })}>
                   Try again

@@ -40,7 +40,7 @@ export default function Login() {
           <div className="glass-card__header">
             <h1 className="glass-card__title">Welcome back</h1>
             <p className="glass-card__subtitle">
-              Sign in to access your internship dashboard
+              Sign in to access your opportunities dashboard
             </p>
           </div>
 
