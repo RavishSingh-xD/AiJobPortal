@@ -37,7 +37,7 @@ export default function Signup() {
           <div className="glass-card__header">
             <h1 className="glass-card__title">Create account</h1>
             <p className="glass-card__subtitle">
-              Join Avyukt.work and start finding opportunities
+              Join Avyukt and start finding opportunities
             </p>
           </div>
 

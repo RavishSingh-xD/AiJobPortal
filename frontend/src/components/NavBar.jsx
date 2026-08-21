@@ -7,15 +7,15 @@ import AnimatedButton from "./AnimatedButton";
 export default function NavBar() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
 
   useEffect(() => {
     async function loadUser() {
       try {
         const profile = await getUserProfile();
-        setEmail(profile.email || "");
+        setName(profile.name || profile.email || "");
       } catch {
-        setEmail("");
+        setName("");
       }
     }
     loadUser();
@@ -37,7 +37,7 @@ export default function NavBar() {
     <GlassCard className="glass-card--compact dashboard-topbar" hover={false}>
       <div className="dashboard-topbar__brand">
         <img src="/avyukt-logo.png" alt="Avyukt Logo" className="dashboard-topbar__logo-img" style={{ width: '2rem', height: '2rem', borderRadius: 'var(--radius-sm)' }} />
-        Avyukt.work
+        Avyukt
       </div>
       <nav className="navbar__links" aria-label="Main">
         <NavLink
@@ -74,7 +74,7 @@ export default function NavBar() {
         </NavLink>
       </nav>
       <div className="dashboard-topbar__actions">
-        {email && <span className="dashboard-topbar__email">{email}</span>}
+        {name && <span className="dashboard-topbar__email">{name}</span>}
         <AnimatedButton
           secondary
           className="btn--compact"

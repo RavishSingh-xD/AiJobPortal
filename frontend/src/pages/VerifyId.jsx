@@ -210,7 +210,7 @@ export default function VerifyId() {
                 <h2 className="success-state__title">You&apos;re verified</h2>
                 <p className="success-state__text">
                   Your identity has been confirmed. You can now apply for
-                  opportunities on Avyukt.work.
+                  opportunities on Avyukt.
                 </p>
                 <AnimatedButton onClick={() => navigate("/dashboard")}>
                   Go to dashboard
