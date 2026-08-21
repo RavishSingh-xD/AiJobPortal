@@ -36,9 +36,7 @@ export default function NavBar() {
   return (
     <GlassCard className="glass-card--compact dashboard-topbar" hover={false}>
       <div className="dashboard-topbar__brand">
-        <span className="dashboard-topbar__logo" aria-hidden="true">
-          🎓
-        </span>
+        <img src="/avyukt-logo.png" alt="Avyukt Logo" className="dashboard-topbar__logo-img" style={{ width: '2rem', height: '2rem', borderRadius: 'var(--radius-sm)' }} />
         Avyukt.work
       </div>
       <nav className="navbar__links" aria-label="Main">
