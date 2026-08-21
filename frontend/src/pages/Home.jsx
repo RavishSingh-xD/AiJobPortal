@@ -74,7 +74,7 @@ function HomeNav({ onLogin, onStart, onHow, onWhy }) {
     <header className="home-nav">
       <div className="home-nav__brand">
         <img
-          src="/avyukt-logo.svg"
+          src="/avyukt-logo.png"
           alt="Avyukt Logo"
           style={{ width: "2rem", height: "2rem", borderRadius: "6px", objectFit: "contain" }}
         />
@@ -120,7 +120,7 @@ export default function Home() {
             <span className="home-orb__ring home-orb__ring--2" />
             <div className="home-orb__tile" style={{ padding: "0.85rem", overflow: "hidden" }}>
               <img
-                src="/avyukt-logo.svg"
+                src="/avyukt-logo.png"
                 alt="Avyukt Logo"
                 style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "0.85rem" }}
               />
