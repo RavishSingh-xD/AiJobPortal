@@ -68,9 +68,9 @@ export default function LiquidGlassCanvas() {
             <feGaussianBlur stdDeviation="0.6" />
           </filter>
           <linearGradient id="liquid-glass-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#c084fc" stopOpacity="0.35" />
-            <stop offset="45%" stopColor="#2dd4bf" stopOpacity="0.12" />
-            <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.22" />
+            <stop offset="0%" stopColor="#e8a882" stopOpacity="0.32" />
+            <stop offset="45%" stopColor="#8fad9a" stopOpacity="0.14" />
+            <stop offset="100%" stopColor="#c46d47" stopOpacity="0.2" />
           </linearGradient>
         </defs>
         <rect

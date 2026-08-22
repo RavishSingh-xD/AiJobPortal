@@ -17,12 +17,10 @@ export default function VerifyEmail() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState("");
-  const [info, setInfo] = useState(
-    presetMessage ||
-      (presetEmail
-        ? "Enter the code we sent to your email. If you don't see it, check your spam or junk folder."
-        : "")
-  );
+  const [info, setInfo] = useState(presetMessage || "");
+
+  const SPAM_OTP_NOTICE =
+    "If you don't see the OTP in your inbox, check your spam or junk folder — verification codes often land there.";
 
   const handleVerify = async (e) => {
     e.preventDefault();
@@ -49,7 +47,7 @@ export default function VerifyEmail() {
     setResending(true);
     try {
       await resendSignupCode(email);
-      setInfo("A new code is on its way. Check your inbox and spam folder if it doesn't appear.");
+      setInfo("A new OTP is on its way. Check your inbox and spam folder if it doesn't appear.");
     } catch (err) {
       setError(err.message || "Could not resend the code. Try again.");
     } finally {
@@ -64,10 +62,13 @@ export default function VerifyEmail() {
           <div className="glass-card__header">
             <h1 className="glass-card__title">Verify your email</h1>
             <p className="glass-card__subtitle">
-              Enter the confirmation code from your inbox to activate your
-              account. If it&apos;s not there, check your spam or junk folder.
+              Enter the confirmation code we emailed you to activate your account.
             </p>
           </div>
+
+          <p className="form-notice" role="note">
+            <strong>Check spam for your OTP.</strong> {SPAM_OTP_NOTICE}
+          </p>
 
           {error && <div className="form-error">{error}</div>}
           {info && !error && <p className="form-info">{info}</p>}
@@ -104,8 +105,8 @@ export default function VerifyEmail() {
                 autoComplete="one-time-code"
               />
               <p className="form-hint">
-                Codes sometimes land in spam or promotions — worth a quick look
-                there before you resend.
+                Still nothing? Look in spam, junk, and promotions before you
+                resend.
               </p>
             </div>
             <AnimatedButton type="submit" loading={loading} disabled={resending}>
