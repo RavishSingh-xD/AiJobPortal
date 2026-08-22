@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { getAuthenticatedUser } from "./services/authService";
+import { getAuthenticatedUser, getUserProfile } from "./services/authService";
+import { requiresIdentityVerification } from "./utils/verification";
 import PageTransition from "./components/PageTransition";
 import Home from "./pages/Home";
 import Signup from "./pages/Signup";
@@ -47,6 +48,39 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function VerifiedRoute({ children }) {
+  const [checking, setChecking] = useState(true);
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    getAuthenticatedUser()
+      .then(() => getUserProfile())
+      .then((profile) => {
+        setAllowed(!requiresIdentityVerification(profile));
+      })
+      .catch(() => setAllowed(false))
+      .finally(() => setChecking(false));
+  }, []);
+
+  if (checking) {
+    return (
+      <div className="page">
+        <div className="page-inner">
+          <p style={{ textAlign: "center", color: "var(--text-secondary)" }}>
+            Loading…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!allowed) {
+    return <Navigate to="/verify-id" replace />;
+  }
+
+  return children;
+}
+
 function AnimatedRoutes() {
   const location = useLocation();
 
@@ -72,7 +106,9 @@ function AnimatedRoutes() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <VerifiedRoute>
+                <Dashboard />
+              </VerifiedRoute>
             </ProtectedRoute>
           }
         />
@@ -80,7 +116,9 @@ function AnimatedRoutes() {
           path="/match"
           element={
             <ProtectedRoute>
-              <MatchWizard />
+              <VerifiedRoute>
+                <MatchWizard />
+              </VerifiedRoute>
             </ProtectedRoute>
           }
         />
@@ -88,7 +126,9 @@ function AnimatedRoutes() {
           path="/applications"
           element={
             <ProtectedRoute>
-              <Applications />
+              <VerifiedRoute>
+                <Applications />
+              </VerifiedRoute>
             </ProtectedRoute>
           }
         />
@@ -96,7 +136,9 @@ function AnimatedRoutes() {
           path="/saved-jobs"
           element={
             <ProtectedRoute>
-              <SavedJobs />
+              <VerifiedRoute>
+                <SavedJobs />
+              </VerifiedRoute>
             </ProtectedRoute>
           }
         />
@@ -104,7 +146,9 @@ function AnimatedRoutes() {
           path="/compare"
           element={
             <ProtectedRoute>
-              <CompareRoles />
+              <VerifiedRoute>
+                <CompareRoles />
+              </VerifiedRoute>
             </ProtectedRoute>
           }
         />
@@ -112,7 +156,9 @@ function AnimatedRoutes() {
           path="/search-alerts"
           element={
             <ProtectedRoute>
-              <SearchAlerts />
+              <VerifiedRoute>
+                <SearchAlerts />
+              </VerifiedRoute>
             </ProtectedRoute>
           }
         />

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser, getUserProfile } from "../services/authService";
 import AuthMarketingPanel from "../components/AuthMarketingPanel";
+import { getPostLoginPath } from "../utils/verification";
 
 function MailIcon() {
   return (
@@ -42,14 +43,7 @@ export default function Login() {
     try {
       await loginUser(email, password);
       const profile = await getUserProfile();
-      if (
-        profile.verificationType === "manual" &&
-        profile.verificationStatus === "pending_review"
-      ) {
-        navigate("/verify-id");
-      } else {
-        navigate("/dashboard");
-      }
+      navigate(getPostLoginPath(profile));
     } catch (err) {
       setError(err.message || "Login failed. Please check your credentials.");
     } finally {

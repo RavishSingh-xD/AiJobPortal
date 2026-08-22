@@ -21,9 +21,8 @@ Scope:
     - Reads: DynamoDB GetItem on Users (to confirm the user exists and to
       look up their email, needed for the Cognito username).
     - Writes: DynamoDB UpdateItem on Users (verificationStatus, updatedAt).
-    - Writes: Cognito AdminUpdateUserAttributes -- ONLY on approval, to set
-      custom:verification_status = "verified" so the frontend/other systems
-      relying on the Cognito attribute stay in sync with DynamoDB.
+    - Writes: Cognito AdminUpdateUserAttributes for approved and rejected
+      decisions so the frontend login flow stays in sync with DynamoDB.
     - Does NOT touch S3 -- this Lambda only handles the decision, not the
       uploaded files themselves.
     - This endpoint is intended to sit behind an admin-only API Gateway
@@ -121,19 +120,15 @@ def lambda_handler(event, context):
 
     email = user_item.get("email")
 
-    # Update Cognito custom attribute only on approval -- a rejection leaves
-    # the Cognito attribute as "pending_review" (or whatever it already was)
-    # since "rejected" isn't a state other systems should treat as settled;
-    # the user may re-submit, at which point post_confirmation logic isn't
-    # re-run, so DynamoDB's verificationStatus is the source of truth for
-    # rejections and Cognito is only kept in sync for the "verified" case.
-    if decision == "approved":
+    # Keep Cognito in sync for both approval and rejection so login/route
+    # guards can block rejected users until they re-verify.
+    if email:
         try:
             _cognito.admin_update_user_attributes(
                 UserPoolId=USER_POOL_ID,
                 Username=email,
                 UserAttributes=[
-                    {"Name": "custom:verification_status", "Value": "verified"},
+                    {"Name": "custom:verification_status", "Value": new_status},
                 ],
             )
         except ClientError as e:

@@ -21,23 +21,27 @@ Response (200):
 
 Scope:
     - Only generates PUT URLs. Does not read/list/delete anything in S3.
-    - Only writes under the "verification/" prefix -- matches the IAM
-      policy scoping (generateUploadUrlRole can only PutObject on
-      verification/* in the bucket).
-    - Does not touch DynamoDB or Cognito at all.
+    - Writes under the "verification/" prefix only.
+    - When the user's verificationStatus is "rejected", resets status to
+      pending_review in Users + Cognito so a new upload can be processed.
 
-Required IAM permission (generateUploadUrlRole):
+Required IAM permissions (generateUploadUrlRole):
     s3:PutObject on arn:aws:s3:::<VERIFICATION_BUCKET>/verification/*
+    dynamodb:GetItem, dynamodb:UpdateItem on Users
+    cognito-idp:AdminUpdateUserAttributes on the User Pool ARN
 
 Environment variables:
-    VERIFICATION_BUCKET   (required, no default -- must be set explicitly)
+    VERIFICATION_BUCKET   (required)
+    USERS_TABLE           (default: "Users")
+    USER_POOL_ID          (required for status reset on re-upload)
     AWS_REGION            (default fallback: "ap-south-1")
-    URL_EXPIRY_SECONDS     (default: 300 -- 5 minutes)
+    URL_EXPIRY_SECONDS    (default: 300)
 """
 
 import os
 import json
 import logging
+import datetime
 
 import boto3
 from botocore.exceptions import ClientError
@@ -46,12 +50,17 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 VERIFICATION_BUCKET = os.environ.get("VERIFICATION_BUCKET")
+USERS_TABLE = os.environ.get("USERS_TABLE", "Users")
+USER_POOL_ID = os.environ.get("USER_POOL_ID")
 REGION = os.environ.get("AWS_REGION", "ap-south-1")
 URL_EXPIRY_SECONDS = int(os.environ.get("URL_EXPIRY_SECONDS", "300"))
 
 ALLOWED_FILE_TYPES = {"selfie", "id_card"}
 
 _s3 = boto3.client("s3", region_name=REGION)
+_dynamodb = boto3.resource("dynamodb", region_name=REGION)
+_users_table = _dynamodb.Table(USERS_TABLE)
+_cognito = boto3.client("cognito-idp", region_name=REGION)
 
 
 def _cors_headers():
@@ -89,6 +98,50 @@ def _get_authenticated_user_id(event):
     return user_id
 
 
+def _reset_rejected_verification(user_id: str):
+    """Allow re-upload after OCR/face rejection by moving back to pending_review."""
+    try:
+        get_response = _users_table.get_item(Key={"userId": user_id})
+    except ClientError as e:
+        error_code = e.response.get("Error", {}).get("Code", "Unknown")
+        logger.warning("Could not read Users record for reset userId=%s: %s", user_id, error_code)
+        return
+
+    user_item = get_response.get("Item") or {}
+    if user_item.get("verificationStatus") != "rejected":
+        return
+
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    try:
+        _users_table.update_item(
+            Key={"userId": user_id},
+            UpdateExpression="SET verificationStatus = :status, updatedAt = :now",
+            ExpressionAttributeValues={
+                ":status": "pending_review",
+                ":now": now,
+            },
+        )
+    except ClientError as e:
+        error_code = e.response.get("Error", {}).get("Code", "Unknown")
+        logger.warning("Could not reset Users verificationStatus userId=%s: %s", user_id, error_code)
+        return
+
+    email = user_item.get("email")
+    if not USER_POOL_ID or not email or not isinstance(email, str):
+        logger.warning("Skipping Cognito reset for userId=%s (missing pool or email)", user_id)
+        return
+
+    try:
+        _cognito.admin_update_user_attributes(
+            UserPoolId=USER_POOL_ID,
+            Username=email,
+            UserAttributes=[{"Name": "custom:verification_status", "Value": "pending_review"}],
+        )
+    except ClientError as e:
+        error_code = e.response.get("Error", {}).get("Code", "Unknown")
+        logger.warning("Could not reset Cognito verification_status userId=%s: %s", user_id, error_code)
+
+
 def lambda_handler(event, context):
     if VERIFICATION_BUCKET is None:
         logger.error("VERIFICATION_BUCKET environment variable is not set")
@@ -110,6 +163,8 @@ def lambda_handler(event, context):
     user_id = _get_authenticated_user_id(event)
     if user_id is None:
         return _response(401, {"error": "Unauthorized"})
+
+    _reset_rejected_verification(user_id)
 
     key = f"verification/{user_id}/{file_type}.jpg"
 

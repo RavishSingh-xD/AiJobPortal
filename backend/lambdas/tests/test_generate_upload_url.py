@@ -29,10 +29,12 @@ def make_event(body_dict, sub=USER_A):
     return event
 
 
+@patch.object(generate_upload_url, "_users_table")
 @patch.object(generate_upload_url, "_s3")
 @patch.object(generate_upload_url, "VERIFICATION_BUCKET", "test-bucket")
-def test_valid_jwt_selfie_returns_url_for_jwt_sub(mock_s3):
+def test_valid_jwt_selfie_returns_url_for_jwt_sub(mock_s3, mock_users_table):
     mock_s3.generate_presigned_url.return_value = "https://example.com/presigned-url"
+    mock_users_table.get_item.return_value = {"Item": {"verificationStatus": "verified"}}
 
     event = make_event({"fileType": "selfie"}, sub=USER_A)
     result = generate_upload_url.lambda_handler(event, None)
@@ -43,10 +45,12 @@ def test_valid_jwt_selfie_returns_url_for_jwt_sub(mock_s3):
     assert body["key"] == "verification/USER_A/selfie.jpg"
 
 
+@patch.object(generate_upload_url, "_users_table")
 @patch.object(generate_upload_url, "_s3")
 @patch.object(generate_upload_url, "VERIFICATION_BUCKET", "test-bucket")
-def test_valid_jwt_id_card_returns_url_for_jwt_sub(mock_s3):
+def test_valid_jwt_id_card_returns_url_for_jwt_sub(mock_s3, mock_users_table):
     mock_s3.generate_presigned_url.return_value = "https://example.com/presigned-url"
+    mock_users_table.get_item.return_value = {"Item": {"verificationStatus": "verified"}}
 
     event = make_event({"fileType": "id_card"}, sub=USER_A)
     result = generate_upload_url.lambda_handler(event, None)
@@ -56,10 +60,12 @@ def test_valid_jwt_id_card_returns_url_for_jwt_sub(mock_s3):
     assert body["key"] == "verification/USER_A/id_card.jpg"
 
 
+@patch.object(generate_upload_url, "_users_table")
 @patch.object(generate_upload_url, "_s3")
 @patch.object(generate_upload_url, "VERIFICATION_BUCKET", "test-bucket")
-def test_body_user_id_is_ignored_in_favor_of_jwt_sub(mock_s3):
+def test_body_user_id_is_ignored_in_favor_of_jwt_sub(mock_s3, mock_users_table):
     mock_s3.generate_presigned_url.return_value = "https://example.com/presigned-url"
+    mock_users_table.get_item.return_value = {"Item": {"verificationStatus": "verified"}}
 
     event = make_event(
         {"userId": USER_B, "fileType": "selfie"},
@@ -109,11 +115,13 @@ def test_missing_bucket_env_var_returns_500():
     assert result["statusCode"] == 500
 
 
+@patch.object(generate_upload_url, "_users_table")
 @patch.object(generate_upload_url, "_s3")
 @patch.object(generate_upload_url, "VERIFICATION_BUCKET", "test-bucket")
-def test_s3_error_returns_500(mock_s3):
+def test_s3_error_returns_500(mock_s3, mock_users_table):
     from botocore.exceptions import ClientError
 
+    mock_users_table.get_item.return_value = {"Item": {"verificationStatus": "verified"}}
     mock_s3.generate_presigned_url.side_effect = ClientError(
         {"Error": {"Code": "AccessDenied", "Message": "boom"}},
         "GeneratePresignedUrl"
@@ -123,3 +131,28 @@ def test_s3_error_returns_500(mock_s3):
     result = generate_upload_url.lambda_handler(event, None)
 
     assert result["statusCode"] == 500
+
+
+@patch.object(generate_upload_url, "_cognito")
+@patch.object(generate_upload_url, "_users_table")
+@patch.object(generate_upload_url, "_s3")
+@patch.object(generate_upload_url, "VERIFICATION_BUCKET", "test-bucket")
+@patch.object(generate_upload_url, "USER_POOL_ID", "ap-south-1_TESTPOOL")
+def test_rejected_user_reset_to_pending_review(mock_s3, mock_users_table, mock_cognito):
+    mock_s3.generate_presigned_url.return_value = "https://example.com/presigned-url"
+    mock_users_table.get_item.return_value = {
+        "Item": {
+            "userId": USER_A,
+            "email": "student@iitb.ac.in",
+            "verificationStatus": "rejected",
+        }
+    }
+
+    event = make_event({"fileType": "selfie"}, sub=USER_A)
+    result = generate_upload_url.lambda_handler(event, None)
+
+    assert result["statusCode"] == 200
+    mock_users_table.update_item.assert_called_once()
+    update_values = mock_users_table.update_item.call_args.kwargs["ExpressionAttributeValues"]
+    assert update_values[":status"] == "pending_review"
+    mock_cognito.admin_update_user_attributes.assert_called_once()

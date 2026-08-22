@@ -44,7 +44,7 @@ def test_approval_updates_cognito_and_dynamodb(mock_users_table, mock_cognito):
 @patch.object(review_verification, "_cognito")
 @patch.object(review_verification, "_users_table")
 @patch.object(review_verification, "USER_POOL_ID", "ap-south-1_TESTPOOL")
-def test_rejection_updates_dynamodb_not_cognito(mock_users_table, mock_cognito):
+def test_rejection_updates_cognito_and_dynamodb(mock_users_table, mock_cognito):
     mock_users_table.get_item.return_value = {
         "Item": {"userId": "user-123", "email": "student@gmail.com"}
     }
@@ -56,8 +56,10 @@ def test_rejection_updates_dynamodb_not_cognito(mock_users_table, mock_cognito):
     body = json.loads(result["body"])
     assert body["verificationStatus"] == "rejected"
 
-    # Cognito should NOT be touched on rejection
-    mock_cognito.admin_update_user_attributes.assert_not_called()
+    mock_cognito.admin_update_user_attributes.assert_called_once()
+    cognito_kwargs = mock_cognito.admin_update_user_attributes.call_args.kwargs
+    attrs = {a["Name"]: a["Value"] for a in cognito_kwargs["UserAttributes"]}
+    assert attrs["custom:verification_status"] == "rejected"
 
     update_kwargs = mock_users_table.update_item.call_args.kwargs
     assert update_kwargs["ExpressionAttributeValues"][":status"] == "rejected"

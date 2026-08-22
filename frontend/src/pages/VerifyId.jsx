@@ -56,6 +56,19 @@ export default function VerifyId() {
   };
 
   useEffect(() => {
+    async function loadStatus() {
+      try {
+        const profile = await getUserProfile();
+        if (profile.verificationStatus === "rejected") {
+          setPhase("rejected");
+        } else if (profile.verificationStatus === "verified") {
+          setPhase("verified");
+        }
+      } catch {
+        // Stay on form; ProtectedRoute already requires auth
+      }
+    }
+    loadStatus();
     return stopPolling;
   }, []);
 
@@ -265,11 +278,17 @@ export default function VerifyId() {
                 </div>
                 <h2 className="success-state__title">Still processing</h2>
                 <p className="success-state__text">
-                  Verification is taking longer than usual. Check your dashboard
-                  shortly for an update on your status.
+                  Verification is taking longer than usual. Please wait a moment
+                  and try submitting again if your status does not update.
                 </p>
-                <AnimatedButton onClick={() => navigate("/dashboard")}>
-                  Go to dashboard
+                <AnimatedButton
+                  onClick={() => {
+                    setSelfie(null);
+                    setIdCard(null);
+                    setPhase("form");
+                  }}
+                >
+                  Try again
                 </AnimatedButton>
               </motion.div>
             )}
