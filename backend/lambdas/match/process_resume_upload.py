@@ -32,6 +32,7 @@ Environment variables:
     GROQ_API_URL             (default: Groq OpenAI-compatible chat completions)
 """
 
+from lambdas.match.resume_document_check import verify_is_resume
 import hashlib
 import io
 import os
@@ -61,6 +62,10 @@ POW_SCORE_MAX = 50
 
 ERROR_UNREADABLE = "Unsupported or unreadable resume file"
 ERROR_EMPTY_TEXT = "Could not read resume text"
+ERROR_NOT_RESUME = (
+    "This file does not appear to be a resume. "
+    "Please upload your CV (PDF or DOCX) with your education and work experience."
+)
 ERROR_AI_SCORING = "AI scoring failed"
 ERROR_UNEXPECTED = "Unexpected error during resume processing"
 
@@ -442,6 +447,22 @@ def _process_record(record):
         if not resume_text or len(resume_text) < MIN_RESUME_TEXT_LENGTH:
             _mark_failed(session_id, ERROR_EMPTY_TEXT)
             return {"key": key, "status": "failed", "reason": "empty_text"}
+
+        try:
+            is_resume, _classify_reason = verify_is_resume(resume_text, call_groq=_call_groq)
+        except (json.JSONDecodeError, TypeError, KeyError, ValueError, HTTPError, URLError):
+            logger.exception("Resume classification failed sessionId=%s", session_id)
+            _mark_failed(session_id, ERROR_NOT_RESUME)
+            return {"key": key, "status": "failed", "reason": "not_resume"}
+
+        if not is_resume:
+            logger.info(
+                "Rejected non-resume upload sessionId=%s reason=%s",
+                session_id,
+                _classify_reason,
+            )
+            _mark_failed(session_id, ERROR_NOT_RESUME)
+            return {"key": key, "status": "failed", "reason": "not_resume"}
 
         fingerprint = _compute_pow_fingerprint(
             linkedin_url, github_handle, leetcode_handle, data

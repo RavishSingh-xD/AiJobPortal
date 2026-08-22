@@ -18,6 +18,8 @@ import NavBar from "../components/NavBar";
 import { EASE_OUT, DURATION, LoadingPulse, MotionListItem } from "../components/motionConfig";
 import SkillGapReport from "../components/SkillGapReport";
 import AlmostThereSection from "../components/AlmostThereSection";
+import { apiErrorMessage } from "../utils/errors";
+import { formatResumeScoringError } from "../utils/resumeUpload";
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 40;
@@ -286,7 +288,12 @@ export default function MatchWizard() {
     }
     if (!isValidResumeFile(file)) {
       setResume(null);
-      setFileError("Resume must be a .pdf or .docx file.");
+      setFileError("Only PDF or DOCX resumes are accepted — not images, spreadsheets, or other documents.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setResume(null);
+      setFileError("Resume must be 10 MB or smaller.");
       return;
     }
     setFileError("");
@@ -318,7 +325,7 @@ export default function MatchWizard() {
         }
         if (session.status === "failed") {
           stopPolling();
-          setError(session.errorMessage || "Scoring failed. Please try again.");
+          setError(formatResumeScoringError(session.errorMessage));
           setStep(2);
           return;
         }
@@ -706,8 +713,12 @@ export default function MatchWizard() {
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="resume">
-                      Resume
+                      Resume (PDF or DOCX only)
                     </label>
+                    <p className="form-hint" style={{ marginBottom: "0.75rem" }}>
+                      Upload your CV — not invoices, marksheets, ID scans, or other documents.
+                      We verify the file is a resume before scoring.
+                    </p>
                     <FileDropZone
                       id="resume"
                       icon="📄"

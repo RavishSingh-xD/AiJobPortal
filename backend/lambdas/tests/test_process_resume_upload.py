@@ -153,7 +153,36 @@ def _owned_session():
     }
 
 
-LONG_TEXT = "Experienced software intern. " * 5  # well over 50 chars
+LONG_TEXT = (
+    "Jane Doe | jane.doe@example.com | +91 9876543210\n"
+    "Education: B.Tech Computer Science, IIT\n"
+    "Experience: Software engineering intern with Python and React projects.\n"
+    "Skills: Python, JavaScript, SQL, teamwork.\n"
+) * 2
+
+INVOICE_TEXT = (
+    "TAX INVOICE\nInvoice Number: INV-2024-001\nBill To: Customer Name\n"
+    "Amount Due: Rs 15,000\nGSTIN: 29ABCDE1234F1Z5\nPayment terms: Net 30\n"
+) * 3
+
+
+@patch.object(pru, "_extract_resume_text", return_value=INVOICE_TEXT)
+@patch.object(pru, "_ssm")
+@patch.object(pru, "_sessions_table")
+@patch.object(pru, "_s3")
+def test_invoice_document_rejected_as_not_resume(mock_s3, mock_table, mock_ssm, mock_extract):
+    mock_table.get_item.return_value = {
+        "Item": {"sessionId": SESSION_ID, "userId": USER_A, "linkedinUrl": "https://linkedin.com/in/x"}
+    }
+    mock_s3.get_object.return_value = mock_s3_object(b"%PDF-1.4 fake")
+
+    result = pru.lambda_handler(make_s3_event(), None)
+
+    assert result["results"][0]["status"] == "failed"
+    assert result["results"][0]["reason"] == "not_resume"
+    values = mock_table.update_item.call_args.kwargs["ExpressionAttributeValues"]
+    assert values[":status"] == "failed"
+    assert values[":error"] == pru.ERROR_NOT_RESUME
 
 
 @patch.object(pru, "_users_table")
