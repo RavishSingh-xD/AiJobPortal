@@ -1,0 +1,31 @@
+# Dependencies / build
+node_modules/
+frontend/node_modules/
+frontend/dist/
+**/__pycache__/
+**/*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+frontend/.env
+backend/.env
+
+# Tooling / OS
+.DS_Store
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+.idea/
+.vscode/
+
+# Lambda deploy artifacts
+**/*.zip
+backend/lambdas/**/package/
+
+# Local secrets / keys
+*.pem
+*.p12

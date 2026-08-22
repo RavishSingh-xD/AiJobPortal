@@ -105,8 +105,9 @@ export async function updateProfile(payload) {
 }
 
 export async function uploadFileToS3(uploadUrl, file) {
+  const contentType = file.type || "image/jpeg";
   await axios.put(uploadUrl, file, {
-    headers: { "Content-Type": "image/jpeg" },
+    headers: { "Content-Type": contentType },
   });
 }
 

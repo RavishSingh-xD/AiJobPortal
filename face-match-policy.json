@@ -3,7 +3,7 @@
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": ["rekognition:CompareFaces"],
+      "Action": ["rekognition:CompareFaces", "rekognition:DetectText"],
       "Resource": "*"
     },
     {
@@ -20,6 +20,16 @@
       "Effect": "Allow",
       "Action": "cognito-idp:AdminUpdateUserAttributes",
       "Resource": "arn:aws:cognito-idp:ap-south-1:470361396576:userpool/ap-south-1_s0f7Kwug8"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["ssm:GetParameter"],
+      "Resource": "arn:aws:ssm:ap-south-1:470361396576:parameter/aijobportal/groq-api-key"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["kms:Decrypt"],
+      "Resource": "arn:aws:kms:ap-south-1:470361396576:alias/aws/ssm"
     }
   ]
 }

@@ -134,8 +134,9 @@ export default function VerifyId() {
                 <div className="glass-card__header">
                   <h1 className="glass-card__title">Verify your identity</h1>
                   <p className="glass-card__subtitle">
-                    Upload a selfie and a photo of your college ID card for
-                    manual verification
+                    Upload a selfie and a photo of your college ID card. We
+                    automatically compare your face and verify the name on your
+                    ID matches your account name.
                   </p>
                 </div>
 
@@ -190,8 +191,9 @@ export default function VerifyId() {
                 </div>
                 <h2 className="success-state__title">Verifying your identity</h2>
                 <p className="success-state__text">
-                  Your selfie and ID card are being compared automatically.
-                  This usually takes just a few seconds.
+                  Your selfie and ID photo are being compared automatically,
+                  including a name check on your ID card. This usually takes
+                  just a few seconds.
                 </p>
               </motion.div>
             )}
@@ -233,9 +235,10 @@ export default function VerifyId() {
                   We couldn&apos;t verify your identity
                 </h2>
                 <p className="success-state__text">
-                  Your selfie and ID photo didn&apos;t match, or the images
-                  weren&apos;t clear enough. Try again with a well-lit,
-                  front-facing selfie and a clear photo of your ID card.
+                  Your selfie and ID photo didn&apos;t match, the name on your ID
+                  didn&apos;t match your account, or the images weren&apos;t clear
+                  enough. Use the same full name as on your ID, a well-lit
+                  front-facing selfie, and a sharp photo of the card.
                 </p>
                 <AnimatedButton
                   onClick={() => {

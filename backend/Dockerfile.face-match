@@ -1,0 +1,18 @@
+# AWS Lambda Python 3.11 — face match + PaddleOCR name verification
+FROM public.ecr.aws/lambda/python:3.11
+
+# OpenCV / Paddle runtime libraries on AL2023
+RUN yum install -y \
+    mesa-libGL \
+    libgomp \
+    && yum clean all
+
+COPY lambdas/verification/requirements-container.txt /tmp/requirements-container.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-container.txt
+
+# Copy backend package tree (imports use lambdas.*)
+COPY . ${LAMBDA_TASK_ROOT}/
+
+ENV PYTHONPATH=${LAMBDA_TASK_ROOT}
+
+CMD ["lambdas.verification.face_match_verification.lambda_handler"]
