@@ -11,6 +11,15 @@ from urllib.parse import quote_plus
 EMPLOYMENT_INTERNSHIP = "Internship"
 EMPLOYMENT_JOB = "Job"
 CLOSED_STATUSES = {"closed", "expired", "inactive"}
+CLOSED_DISPLAY_KEYWORDS = (
+    "closed",
+    "expired",
+    "inactive",
+    "filled",
+    "no longer",
+    "unavailable",
+    "removed",
+)
 
 DOMAIN_TABLE_MAP = {
     "Engineering": "jobs_engineering",
@@ -50,8 +59,17 @@ def as_number(value, default=0):
 
 
 def is_open_listing(item: dict) -> bool:
-    status = item.get("status") or item.get("display_status") or ""
-    return str(status).strip().lower() not in CLOSED_STATUSES
+    status = str(item.get("status") or "").strip().lower()
+    display = str(item.get("display_status") or "").strip().lower()
+
+    if status in CLOSED_STATUSES or display in CLOSED_STATUSES:
+        return False
+
+    for keyword in CLOSED_DISPLAY_KEYWORDS:
+        if keyword in display:
+            return False
+
+    return True
 
 
 def normalize_required_skills(required_skills):

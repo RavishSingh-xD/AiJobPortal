@@ -331,9 +331,12 @@ def test_active_definition_matches_get_matched_jobs():
     open_item = make_job("1", status="ACTIVE", display_status="Active")
     closed_item = make_job("2", status="closed", display_status="Closed")
     expired_via_display = {"status": "", "display_status": "expired"}
-    assert list_jobs._is_open_listing(open_item) is True
-    assert lu.is_open_listing(open_item) is True
-    assert list_jobs._is_open_listing(closed_item) is False
-    assert lu.is_open_listing(closed_item) is False
-    assert list_jobs._is_open_listing(expired_via_display) is False
-    assert lu.is_open_listing(expired_via_display) is False
+    closed_via_display = make_job("3", status="ACTIVE", display_status="🔴 Closed")
+
+    def _open(item):
+        return list_jobs._is_open_listing(item) and lu.is_open_listing(item)
+
+    assert _open(open_item) is True
+    assert _open(closed_item) is False
+    assert _open(expired_via_display) is False
+    assert _open(closed_via_display) is False

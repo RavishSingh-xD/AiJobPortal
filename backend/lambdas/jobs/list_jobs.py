@@ -109,6 +109,15 @@ DEFAULT_SKILL_BY_DOMAIN = {
 # status is empty, display_status) is not one of these values -- not a
 # strict status == "active" equality check.
 CLOSED_STATUSES = {"closed", "expired", "inactive"}
+CLOSED_DISPLAY_KEYWORDS = (
+    "closed",
+    "expired",
+    "inactive",
+    "filled",
+    "no longer",
+    "unavailable",
+    "removed",
+)
 
 JOB_FIELDS = (
     "canonical_id",
@@ -219,9 +228,18 @@ def _skill_matches(required_skills, skill_query: str) -> bool:
 
 
 def _is_open_listing(item: dict) -> bool:
-    """Mirror get_matched_jobs._is_open_listing / start_domain_test exactly."""
-    status = item.get("status") or item.get("display_status") or ""
-    return str(status).strip().lower() not in CLOSED_STATUSES
+    """Mirror lambdas.match.listing_utils.is_open_listing."""
+    status = str(item.get("status") or "").strip().lower()
+    display = str(item.get("display_status") or "").strip().lower()
+
+    if status in CLOSED_STATUSES or display in CLOSED_STATUSES:
+        return False
+
+    for keyword in CLOSED_DISPLAY_KEYWORDS:
+        if keyword in display:
+            return False
+
+    return True
 
 
 def _employment_type_matches(employment_type, employment_type_query: str) -> bool:
