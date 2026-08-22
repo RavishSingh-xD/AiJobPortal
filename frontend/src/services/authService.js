@@ -108,7 +108,7 @@ export async function getAccessToken() {
 
 export async function getUserProfile() {
   const attributes = await fetchUserAttributes();
-  return {
+  const profile = {
     userId: attributes.sub,
     email: attributes.email,
     name: attributes.name,
@@ -116,4 +116,30 @@ export async function getUserProfile() {
     verificationStatus: attributes["custom:verification_status"],
     collegeName: attributes["custom:college_name"],
   };
+
+  // DynamoDB is the source of truth for verification; Cognito can lag after OCR.
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl) {
+    try {
+      const token = await getIdToken();
+      if (token) {
+        const res = await fetch(`${apiUrl}/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.verificationStatus) {
+            profile.verificationStatus = data.verificationStatus;
+          }
+          if (data.verificationType) {
+            profile.verificationType = data.verificationType;
+          }
+        }
+      }
+    } catch {
+      // Keep Cognito attributes when profile API is unavailable
+    }
+  }
+
+  return profile;
 }

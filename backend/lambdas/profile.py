@@ -83,6 +83,8 @@ def _profile_payload(item: dict) -> dict:
         "linkedinUrl": item.get("linkedinUrl", ""),
         "githubUrl": item.get("githubUrl", ""),
         "completionPct": _compute_completion_pct(item),
+        "verificationStatus": item.get("verificationStatus", ""),
+        "verificationType": item.get("verificationType", ""),
     }
 
 

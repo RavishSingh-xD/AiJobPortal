@@ -132,6 +132,22 @@ def test_get_no_existing_item(profile_module):
     assert body["linkedinUrl"] == ""
     assert body["githubUrl"] == ""
     assert body["completionPct"] == 0
+    assert body["verificationStatus"] == ""
+    assert body["verificationType"] == ""
+
+
+def test_get_includes_verification_fields(profile_module):
+    profile_module.users_table.put_item(
+        Item={
+            "userId": USER_ID,
+            "verificationStatus": "rejected",
+            "verificationType": "manual",
+        }
+    )
+    result = profile_module.handler(make_event("GET"), None)
+    body = json.loads(result["body"])
+    assert body["verificationStatus"] == "rejected"
+    assert body["verificationType"] == "manual"
 
 
 def test_get_both_urls_completion_100(profile_module):

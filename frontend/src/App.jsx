@@ -93,7 +93,16 @@ function AnimatedRoutes() {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/jobs" element={<JobListings />} />
+        <Route
+          path="/jobs"
+          element={
+            <ProtectedRoute>
+              <VerifiedRoute>
+                <JobListings />
+              </VerifiedRoute>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/verify-id"
           element={
