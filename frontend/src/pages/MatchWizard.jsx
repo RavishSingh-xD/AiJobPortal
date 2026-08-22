@@ -23,12 +23,6 @@ const MAX_POLL_ATTEMPTS = 40;
 const MAX_SKILL_TAGS = 5;
 
 const TEST_DOMAINS = ["Engineering", "Business", "Healthcare", "Design"];
-const TEST_DIFFICULTIES = [
-  { label: "Easy", value: "easy" },
-  { label: "Medium", value: "medium" },
-  { label: "Hard", value: "hard" },
-  { label: "Mixed", value: "mixed" },
-];
 const SKILL_DEFAULT_BY_DOMAIN = {
   Engineering: "Software",
   Business: "Management",
@@ -160,7 +154,6 @@ export default function MatchWizard() {
 
   const [testDomain, setTestDomain] = useState("Engineering");
   const [testSkill, setTestSkill] = useState(SKILL_DEFAULT_BY_DOMAIN.Engineering);
-  const [testDifficulty, setTestDifficulty] = useState("medium");
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(15);
@@ -264,7 +257,7 @@ export default function MatchWizard() {
     Boolean(linkedinUrl.trim()) && Boolean(resume) && !fileError && !loading;
 
   const canStartTest =
-    Boolean(testDomain) && Boolean(testSkill.trim()) && Boolean(testDifficulty) && !loading;
+    Boolean(testDomain) && Boolean(testSkill.trim()) && !loading;
 
   const handleResumeChange = (e) => {
     const file = e.target.files?.[0] ?? null;
@@ -489,7 +482,6 @@ export default function MatchWizard() {
       const data = await startDomainTest(sessionId, {
         domain: testDomain,
         skill: testSkill.trim(),
-        difficulty: testDifficulty,
       });
       applyQuestion(data);
       setStep(5);
@@ -805,24 +797,6 @@ export default function MatchWizard() {
                         placeholder="e.g. Python"
                         required
                       />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="testDifficulty">
-                        Difficulty
-                      </label>
-                      <select
-                        id="testDifficulty"
-                        className="form-input filter-input"
-                        value={testDifficulty}
-                        onChange={(e) => setTestDifficulty(e.target.value)}
-                      >
-                        {TEST_DIFFICULTIES.map((item) => (
-                          <option key={item.value} value={item.value}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
                     </div>
 
                     <AnimatedButton type="submit" disabled={!canStartTest}>

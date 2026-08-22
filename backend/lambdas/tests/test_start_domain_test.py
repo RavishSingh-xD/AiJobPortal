@@ -16,6 +16,8 @@ USER_A = "USER_A"
 USER_B = "USER_B"
 SESSION_ID = "session-123"
 
+TIME_BY_DIFFICULTY = {"easy": 15, "medium": 25, "hard": 30}
+
 
 def make_event(body_dict=None, sub=USER_A, session_id=SESSION_ID):
     event = {"body": json.dumps(body_dict or {})}
@@ -56,11 +58,10 @@ def groq_questions():
     ]
 
 
-def valid_body(difficulty="medium"):
+def valid_body():
     return {
         "domain": "Engineering",
         "skill": "Python",
-        "difficulty": difficulty,
     }
 
 
@@ -80,24 +81,11 @@ def test_invalid_domain_returns_400():
     result = sdt.lambda_handler(make_event({
         "domain": "engineering",
         "skill": "Python",
-        "difficulty": "easy",
     }), None)
     assert result["statusCode"] == 400
     error = json.loads(result["body"])["error"]
     assert "Engineering" in error
     assert "Design" in error
-
-
-def test_invalid_difficulty_returns_400():
-    result = sdt.lambda_handler(make_event({
-        "domain": "Engineering",
-        "skill": "Python",
-        "difficulty": "Easy",
-    }), None)
-    assert result["statusCode"] == 400
-    error = json.loads(result["body"])["error"]
-    assert "easy" in error
-    assert "mixed" in error
 
 
 @patch.object(sdt, "_sessions_table")
@@ -135,11 +123,11 @@ def test_wrong_status_returns_409(mock_table):
     mock_table.update_item.assert_not_called()
 
 
-def _run_successful_start(mock_table, mock_skills, mock_groq, difficulty):
+def _run_successful_start(mock_table, mock_skills, mock_groq):
     mock_table.get_item.return_value = awaiting_session()
     mock_skills.return_value = "Python, React"
     mock_groq.return_value = json.dumps(groq_questions())
-    result = sdt.lambda_handler(make_event(valid_body(difficulty)), None)
+    result = sdt.lambda_handler(make_event(valid_body()), None)
     assert result["statusCode"] == 200
     body = json.loads(result["body"])
     assert_response_has_no_answers(body)
@@ -148,51 +136,36 @@ def _run_successful_start(mock_table, mock_skills, mock_groq, difficulty):
     assert len(questions) == 15
     assert all("correctIndex" in q for q in questions)
     assert stored[":status"] == "test_in_progress"
-    assert stored[":difficulty"] == difficulty
+    assert stored[":difficulty"] == "mixed"
     return body, questions
 
 
 @patch.object(sdt, "_call_groq")
 @patch.object(sdt, "_sample_in_demand_skills")
 @patch.object(sdt, "_sessions_table")
-def test_successful_start_easy(mock_table, mock_skills, mock_groq):
-    body, questions = _run_successful_start(mock_table, mock_skills, mock_groq, "easy")
-    assert body["timeLimitSeconds"] == 45
-    assert all(q["difficulty"] == "easy" and q["timeLimitSeconds"] == 45 for q in questions)
-
-
-@patch.object(sdt, "_call_groq")
-@patch.object(sdt, "_sample_in_demand_skills")
-@patch.object(sdt, "_sessions_table")
-def test_successful_start_medium(mock_table, mock_skills, mock_groq):
-    body, questions = _run_successful_start(mock_table, mock_skills, mock_groq, "medium")
-    assert body["timeLimitSeconds"] == 90
-    assert all(q["difficulty"] == "medium" and q["timeLimitSeconds"] == 90 for q in questions)
-
-
-@patch.object(sdt, "_call_groq")
-@patch.object(sdt, "_sample_in_demand_skills")
-@patch.object(sdt, "_sessions_table")
-def test_successful_start_hard(mock_table, mock_skills, mock_groq):
-    body, questions = _run_successful_start(mock_table, mock_skills, mock_groq, "hard")
-    assert 120 <= body["timeLimitSeconds"] <= 150
-    assert all(q["difficulty"] == "hard" for q in questions)
-    assert all(120 <= q["timeLimitSeconds"] <= 150 for q in questions)
-
-
-@patch.object(sdt, "_call_groq")
-@patch.object(sdt, "_sample_in_demand_skills")
-@patch.object(sdt, "_sessions_table")
-def test_successful_start_mixed(mock_table, mock_skills, mock_groq):
-    body, questions = _run_successful_start(mock_table, mock_skills, mock_groq, "mixed")
-    assert all(q["difficulty"] in ("easy", "medium", "hard") for q in questions)
-    limits = {"easy": 45, "medium": 90}
+def test_successful_start_uses_mixed_difficulties(mock_table, mock_skills, mock_groq):
+    body, questions = _run_successful_start(mock_table, mock_skills, mock_groq)
+    counts = {"easy": 0, "medium": 0, "hard": 0}
     for question in questions:
-        if question["difficulty"] == "hard":
-            assert 120 <= question["timeLimitSeconds"] <= 150
-        else:
-            assert question["timeLimitSeconds"] == limits[question["difficulty"]]
+        counts[question["difficulty"]] += 1
+        assert question["timeLimitSeconds"] == TIME_BY_DIFFICULTY[question["difficulty"]]
+    assert counts == {"easy": 5, "medium": 5, "hard": 5}
+    assert body["timeLimitSeconds"] in TIME_BY_DIFFICULTY.values()
     assert "correctIndex" not in json.dumps(body)
+
+
+def test_time_limit_seconds_per_difficulty():
+    assert sdt._time_limit_seconds("easy") == 15
+    assert sdt._time_limit_seconds("medium") == 25
+    assert sdt._time_limit_seconds("hard") == 30
+
+
+def test_build_mixed_difficulties_balanced():
+    difficulties = sdt._build_mixed_difficulties(15)
+    assert len(difficulties) == 15
+    assert difficulties.count("easy") == 5
+    assert difficulties.count("medium") == 5
+    assert difficulties.count("hard") == 5
 
 
 @patch.object(sdt, "_call_groq", return_value="not json")
@@ -219,6 +192,6 @@ def test_jobs_scan_failure_still_starts_test(mock_table):
             "Scan",
         ),
     ), patch.object(sdt, "_call_groq", return_value=json.dumps(groq_questions())):
-        result = sdt.lambda_handler(make_event(valid_body("easy")), None)
+        result = sdt.lambda_handler(make_event(valid_body()), None)
     assert result["statusCode"] == 200
     mock_table.update_item.assert_called_once()
