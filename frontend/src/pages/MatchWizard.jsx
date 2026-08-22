@@ -11,6 +11,7 @@ import {
   getMatchedJobs,
   getFinalRecommendation,
   createApplication,
+  listSubdomains,
 } from "../services/apiClient";
 import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
@@ -19,7 +20,6 @@ import { EASE_OUT, DURATION, LoadingPulse, MotionListItem } from "../components/
 import SkillGapReport from "../components/SkillGapReport";
 import AlmostThereSection from "../components/AlmostThereSection";
 import { apiErrorMessage } from "../utils/errors";
-import { formatResumeScoringError } from "../utils/resumeUpload";
 import { getSubdomainSuggestions, DOMAIN_SKILL_EXAMPLES } from "../utils/subdomainSuggestions";
 
 const POLL_INTERVAL_MS = 3000;
@@ -169,7 +169,9 @@ export default function MatchWizard() {
   const [testSkill, setTestSkill] = useState(
     getSubdomainSuggestions("Engineering")[0] || "Software"
   );
-  const testSkillSuggestions = getSubdomainSuggestions(testDomain);
+  const [testSkillSuggestions, setTestSkillSuggestions] = useState(
+    () => getSubdomainSuggestions("Engineering")
+  );
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(15);
@@ -235,6 +237,29 @@ export default function MatchWizard() {
     currentQuestionRef.current = currentQuestion;
   }, [currentQuestion]);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadSubdomains() {
+      try {
+        const data = await listSubdomains(testDomain);
+        if (!cancelled && data?.subdomains?.length) {
+          const labels = data.subdomains.map((row) => row.label).filter(Boolean);
+          setTestSkillSuggestions(labels);
+          return;
+        }
+      } catch {
+        // fall back to static list
+      }
+      if (!cancelled) {
+        setTestSkillSuggestions(getSubdomainSuggestions(testDomain));
+      }
+    }
+    loadSubdomains();
+    return () => {
+      cancelled = true;
+    };
+  }, [testDomain]);
+
   const applyQuestion = (payload) => {
     submittingRef.current = false;
     autoSubmittedForRef.current = null;
@@ -287,12 +312,7 @@ export default function MatchWizard() {
     }
     if (!isValidResumeFile(file)) {
       setResume(null);
-      setFileError("Only PDF or DOCX resumes are accepted — not images, spreadsheets, or other documents.");
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setResume(null);
-      setFileError("Resume must be 10 MB or smaller.");
+      setFileError("Resume must be a .pdf or .docx file.");
       return;
     }
     setFileError("");
@@ -301,8 +321,8 @@ export default function MatchWizard() {
 
   const handleDomainChange = (value) => {
     setTestDomain(value);
-    const suggestions = getSubdomainSuggestions(value);
-    setTestSkill(suggestions[0] || "");
+    const fallback = getSubdomainSuggestions(value);
+    setTestSkill(fallback[0] || "");
   };
 
   const startPolling = (id) => {
@@ -325,7 +345,7 @@ export default function MatchWizard() {
         }
         if (session.status === "failed") {
           stopPolling();
-          setError(formatResumeScoringError(session.errorMessage));
+          setError(session.errorMessage || "Scoring failed. Please try again.");
           setStep(2);
           return;
         }
@@ -713,12 +733,8 @@ export default function MatchWizard() {
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="resume">
-                      Resume (PDF or DOCX only)
+                      Resume
                     </label>
-                    <p className="form-hint" style={{ marginBottom: "0.75rem" }}>
-                      Upload your CV — not invoices, marksheets, ID scans, or other documents.
-                      We verify the file is a resume before scoring.
-                    </p>
                     <FileDropZone
                       id="resume"
                       icon="📄"

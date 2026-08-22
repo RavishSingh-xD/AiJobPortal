@@ -29,6 +29,13 @@ export async function listJobs(domain, options = {}) {
   return data;
 }
 
+export async function listSubdomains(domain) {
+  const { data } = await api.get("/jobs", {
+    params: { domain, listSubdomains: true },
+  });
+  return data;
+}
+
 export async function startMatchSession() {
   const { data } = await api.post("/match/start");
   return data;

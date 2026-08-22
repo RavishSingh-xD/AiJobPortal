@@ -3,8 +3,13 @@
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": ["dynamodb:GetItem", "dynamodb:PutItem"],
+      "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query"],
       "Resource": "arn:aws:dynamodb:ap-south-1:470361396576:table/harvest_status"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query"],
+      "Resource": "arn:aws:dynamodb:ap-south-1:470361396576:table/subdomain_catalog"
     },
     {
       "Effect": "Allow",

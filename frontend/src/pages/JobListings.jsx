@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   listJobs,
+  listSubdomains,
   saveJob,
   unsaveJob,
   listSavedJobs,
@@ -172,7 +173,31 @@ export default function JobListings() {
   const pollCountRef = useRef(0);
   const pollTimerRef = useRef(null);
   const pollParamsRef = useRef(null);
-  const skillSuggestions = getSubdomainSuggestions(domain);
+  const [skillSuggestions, setSkillSuggestions] = useState(
+    () => getSubdomainSuggestions("Engineering")
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadSubdomains() {
+      try {
+        const data = await listSubdomains(domain);
+        if (!cancelled && data?.subdomains?.length) {
+          setSkillSuggestions(data.subdomains.map((row) => row.label).filter(Boolean));
+          return;
+        }
+      } catch {
+        // fall back to static list
+      }
+      if (!cancelled) {
+        setSkillSuggestions(getSubdomainSuggestions(domain));
+      }
+    }
+    loadSubdomains();
+    return () => {
+      cancelled = true;
+    };
+  }, [domain]);
 
   const stopPolling = () => {
     if (pollTimerRef.current) {

@@ -77,6 +77,21 @@ from decimal import Decimal
 import boto3
 from botocore.exceptions import ClientError
 
+try:
+    from lambdas.jobs.subdomain_catalog import (
+        expand_skill_needles,
+        harvest_status_key,
+        list_subdomains,
+        seed_catalog_for_domain,
+    )
+except ImportError:  # Lambda flat zip layout
+    from subdomain_catalog import (
+        expand_skill_needles,
+        harvest_status_key,
+        list_subdomains,
+        seed_catalog_for_domain,
+    )
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -87,6 +102,8 @@ STALE_THRESHOLD_SECONDS = int(os.environ.get("STALE_THRESHOLD_SECONDS", "300"))
 
 DEFAULT_LIMIT = 20
 MAX_LIMIT = 50
+MAX_SCAN_PAGES = 25
+SCAN_PAGE_SIZE = 50
 
 DOMAIN_TABLE_MAP = {
     "engineering": "jobs_engineering",
@@ -212,25 +229,35 @@ def _decode_next_token(token: str):
     return decoded
 
 
-def _skill_matches(item: dict, skill_query: str) -> bool:
-    if not skill_query:
+def _skill_matches(item: dict, skill_query: str, extra_needles=None) -> bool:
+    if not skill_query or not str(skill_query).strip():
         return True
-    needle = skill_query.strip().lower()
-    if not needle:
-        return True
+
+    needles = set(extra_needles or [])
+    if not needles:
+        needles = expand_skill_needles("", skill_query)
+    if not needles:
+        needles = {skill_query.strip().lower()}
+
     required_skills = item.get("required_skills")
-    if required_skills:
-        for skill in required_skills:
-            if skill is None:
-                continue
-            if needle in str(skill).lower():
-                return True
     harvest_skill = str(item.get("harvest_skill") or "").strip().lower()
-    if harvest_skill and needle in harvest_skill:
-        return True
     title = str(item.get("title") or "").strip().lower()
-    if title and needle in title:
-        return True
+
+    for needle in needles:
+        if not needle:
+            continue
+        if required_skills:
+            for skill in required_skills:
+                if skill is None:
+                    continue
+                skill_lower = str(skill).lower()
+                if needle in skill_lower or skill_lower in needle:
+                    return True
+        if harvest_skill and (needle in harvest_skill or harvest_skill in needle):
+            return True
+        if title and needle in title:
+            return True
+
     if not required_skills and not harvest_skill:
         return False
     return False
@@ -292,11 +319,11 @@ def _raw_scan_is_empty(table_name: str) -> bool:
     return len(response.get("Items") or []) == 0
 
 
-def _get_harvest_status(domain_key: str):
+def _get_harvest_status(status_key: str):
     try:
-        response = _harvest_status_table.get_item(Key={"domain": domain_key})
+        response = _harvest_status_table.get_item(Key={"domain": status_key})
     except ClientError as e:
-        logger.error("Failed to read harvest_status for domain=%s: %s", domain_key, e)
+        logger.error("Failed to read harvest_status for key=%s: %s", status_key, e)
         return None
     return response.get("Item")
 
@@ -314,26 +341,29 @@ def _is_stale(status_item) -> bool:
     return age_seconds > STALE_THRESHOLD_SECONDS
 
 
-def _trigger_harvest(domain_display: str, domain_key: str, skill: str):
+def _trigger_harvest(domain_display: str, status_key: str, skill: str):
     """
     Fires an on-demand harvest via SSM, unless one is already genuinely
-    in progress for this domain. Returns True if a harvest was triggered
-    (or already running), False if triggering itself failed.
+    in progress for this domain/skill key. Returns True if triggered or
+    already running, False if triggering failed.
     """
-    existing = _get_harvest_status(domain_key)
+    existing = _get_harvest_status(status_key)
     if existing and existing.get("status") == "in_progress" and not _is_stale(existing):
-        logger.info("Harvest already in progress for domain=%s, not re-triggering", domain_key)
+        logger.info("Harvest already in progress for key=%s, not re-triggering", status_key)
         return True
 
     if not HARVESTER_INSTANCE_ID:
-        logger.warning("HARVESTER_INSTANCE_ID not set -- cannot trigger harvest for domain=%s", domain_key)
+        logger.warning("HARVESTER_INSTANCE_ID not set -- cannot trigger harvest for key=%s", status_key)
         return False
 
-    effective_skill = skill or DEFAULT_SKILL_BY_DOMAIN.get(domain_key)
+    effective_skill = (skill or "").strip() or None
+    if not effective_skill:
+        domain_key = status_key.split("#", 1)[0]
+        effective_skill = DEFAULT_SKILL_BY_DOMAIN.get(domain_key)
     skill_arg = f' -s "{effective_skill}"' if effective_skill else ""
     command = (
         f"cd /home/ubuntu/blackhole && "
-        f'sudo -u ubuntu ./venv/bin/python harvester.py -d "{domain_display}"{skill_arg} --exclude-fallbacks'
+        f'sudo -u ubuntu ./venv/bin/python harvester.py -d "{domain_display}"{skill_arg}'
     )
 
     try:
@@ -345,26 +375,87 @@ def _trigger_harvest(domain_display: str, domain_key: str, skill: str):
         )
         command_id = ssm_response["Command"]["CommandId"]
     except ClientError as e:
-        logger.error("Failed to send SSM command for domain=%s: %s", domain_key, e)
+        logger.error("Failed to send SSM command for key=%s: %s", status_key, e)
         return False
 
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
     try:
         _harvest_status_table.put_item(
             Item={
-                "domain": domain_key,
+                "domain": status_key,
                 "status": "in_progress",
                 "startedAt": now,
                 "ssmCommandId": command_id,
+                "skill": effective_skill or "",
             }
         )
     except ClientError as e:
-        logger.error("Failed to record harvest_status for domain=%s: %s", domain_key, e)
-        # The harvest itself was still triggered successfully -- don't
-        # fail the request just because the status record write failed.
+        logger.error("Failed to record harvest_status for key=%s: %s", status_key, e)
 
-    logger.info("Triggered on-demand harvest for domain=%s commandId=%s", domain_key, command_id)
+    logger.info(
+        "Triggered on-demand harvest key=%s skill=%s commandId=%s",
+        status_key,
+        effective_skill,
+        command_id,
+    )
     return True
+
+
+def _filter_scan_items(items, skill, employment_type_query, domain_key, skill_needles):
+    jobs = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        if not _is_open_listing(item):
+            continue
+        if skill and not _skill_matches(item, skill, skill_needles):
+            continue
+        if employment_type_query and not _employment_type_matches(
+            item.get("employment_type"), employment_type_query
+        ):
+            continue
+        jobs.append(_normalize_job(item))
+    return jobs
+
+
+def _collect_jobs(
+    table_name: str,
+    limit: int,
+    skill: str,
+    employment_type_query: str,
+    domain_key: str,
+    exclusive_start_key=None,
+):
+    """
+    Scan and filter jobs. On the first page (no nextToken), keep scanning
+    until enough matches are found or the table is exhausted.
+    """
+    is_continuation = exclusive_start_key is not None
+    deep_scan = bool(skill) and not is_continuation
+    skill_needles = expand_skill_needles(domain_key, skill) if skill else None
+    jobs = []
+    last_evaluated_key = exclusive_start_key
+    pages = 0
+
+    while len(jobs) < limit and pages < MAX_SCAN_PAGES:
+        scan_limit = SCAN_PAGE_SIZE if deep_scan else limit
+        scan_response = _scan_jobs(table_name, scan_limit, last_evaluated_key)
+        batch = _filter_scan_items(
+            scan_response.get("Items") or [],
+            skill,
+            employment_type_query,
+            domain_key,
+            skill_needles,
+        )
+        jobs.extend(batch)
+        last_evaluated_key = scan_response.get("LastEvaluatedKey")
+        pages += 1
+        if not last_evaluated_key:
+            break
+        if is_continuation or not deep_scan:
+            break
+
+    return jobs[:limit], last_evaluated_key
 
 
 def lambda_handler(event, context):
@@ -407,6 +498,25 @@ def lambda_handler(event, context):
     domain_key = domain.strip().lower()
     domain_display = domain.strip().title()
 
+    list_subdomains_flag = str(params.get("listSubdomains") or "").lower()
+    if list_subdomains_flag in ("1", "true", "yes"):
+        seed_catalog_for_domain(domain_key)
+        entries = list_subdomains(domain_key)
+        payload = {
+            "domain": domain_display,
+            "subdomains": [
+                {
+                    "label": e["label"],
+                    "slug": e["slug"],
+                    "searchTerms": e.get("searchTerms") or [],
+                    "lastHarvestedAt": e.get("lastHarvestedAt"),
+                    "lastJobCount": e.get("lastJobCount"),
+                }
+                for e in entries
+            ],
+        }
+        return _response(200, payload)
+
     # Check if this domain has any data at all -- table missing or empty
     # both mean "never harvested" from the caller's perspective.
     table_is_empty_or_missing = False
@@ -420,29 +530,36 @@ def lambda_handler(event, context):
             logger.error("DynamoDB check failed for table=%s: %s", table_name, error_code)
             return _response(500, {"error": "Could not list jobs"})
 
+    skill_trimmed = (skill or "").strip() if skill else ""
+    status_key = harvest_status_key(domain_key, skill_trimmed or None)
+
     if table_is_empty_or_missing:
         logger.info("Domain=%s table missing/empty -- attempting trigger", domain_key)
         try:
-            triggered = _trigger_harvest(domain_display, domain_key, skill)
+            triggered = _trigger_harvest(domain_display, status_key, skill_trimmed)
         except Exception:
-            logger.exception("Unexpected exception inside _trigger_harvest for domain=%s", domain_key)
+            logger.exception("Unexpected exception inside _trigger_harvest for key=%s", status_key)
             triggered = False
-        logger.info("_trigger_harvest returned triggered=%s for domain=%s", triggered, domain_key)
         if triggered:
             return _response(
                 202,
                 {
                     "status": "harvesting",
                     "domain": domain_display,
-                    "message": "We're finding fresh listings for this domain -- check back shortly.",
+                    "skill": skill_trimmed or None,
+                    "message": "We're finding fresh listings for this domain — check back shortly.",
                 },
             )
-        # Triggering itself failed (e.g. no instance configured) -- fall
-        # through to a normal empty response rather than erroring, so the
-        # API still behaves sensibly even without the harvester wired up.
 
     try:
-        scan_response = _scan_jobs(table_name, limit, exclusive_start_key)
+        jobs, last_evaluated_key = _collect_jobs(
+            table_name,
+            limit,
+            skill_trimmed,
+            employment_type_query,
+            domain_key,
+            exclusive_start_key,
+        )
     except ClientError as e:
         error_code = e.response.get("Error", {}).get("Code", "Unknown")
         logger.error("DynamoDB Scan failed for table=%s: %s", table_name, error_code)
@@ -451,31 +568,47 @@ def lambda_handler(event, context):
         logger.exception("Unexpected error listing jobs from table=%s", table_name)
         return _response(500, {"error": "Could not list jobs"})
 
-    items = scan_response.get("Items") or []
-    jobs = []
-    for item in items:
-        if not isinstance(item, dict):
-            continue
-        if not _is_open_listing(item):
-            continue
-        if skill and not _skill_matches(item, skill):
-            continue
-        if employment_type_query and not _employment_type_matches(
-            item.get("employment_type"), employment_type_query
-        ):
-            continue
-        jobs.append(_normalize_job(item))
+    # Skill-specific harvest when subdomain filter returns nothing on first page
+    if (
+        skill_trimmed
+        and not exclusive_start_key
+        and len(jobs) == 0
+        and not table_is_empty_or_missing
+    ):
+        logger.info(
+            "No matches for domain=%s skill=%s -- triggering skill harvest",
+            domain_key,
+            skill_trimmed,
+        )
+        try:
+            triggered = _trigger_harvest(domain_display, status_key, skill_trimmed)
+        except Exception:
+            logger.exception("Skill harvest trigger failed key=%s", status_key)
+            triggered = False
+        if triggered:
+            return _response(
+                202,
+                {
+                    "status": "harvesting",
+                    "domain": domain_display,
+                    "skill": skill_trimmed,
+                    "message": (
+                        f"We're harvesting open roles for {skill_trimmed} "
+                        "in this domain — check back shortly."
+                    ),
+                },
+            )
 
     response_body = {
         "jobs": jobs,
         "count": len(jobs),
-        "nextToken": _encode_next_token(scan_response.get("LastEvaluatedKey")),
+        "nextToken": _encode_next_token(last_evaluated_key),
     }
 
     logger.info(
-        "Listed jobs domain=%s table=%s employmentType=%s count=%s hasMore=%s",
+        "Listed jobs domain=%s skill=%s employmentType=%s count=%s hasMore=%s",
         domain.strip(),
-        table_name,
+        skill_trimmed or None,
         employment_type_query,
         len(jobs),
         response_body["nextToken"] is not None,

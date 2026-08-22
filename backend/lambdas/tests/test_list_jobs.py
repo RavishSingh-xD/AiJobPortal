@@ -85,24 +85,24 @@ def test_existing_data_returns_normally_no_trigger(mock_dynamodb):
 
 
 @patch.object(list_jobs, "_dynamodb")
-def test_skill_filter_no_matches_does_not_trigger_harvest(mock_dynamodb):
-    """A skill filter matching nothing in an already-populated table is a
-    normal empty search result, NOT a signal to harvest more data."""
+def test_skill_filter_no_matches_triggers_skill_harvest(mock_dynamodb):
+    """When a skill filter matches nothing, trigger a skill-specific harvest."""
     mock_table = MagicMock()
     mock_table.scan.side_effect = [
         {"Items": [make_job("1")]},  # raw check -- has data
-        {"Items": [make_job("1", required_skills=["Java"])]},  # real scan
+        {"Items": [make_job("1", required_skills=["Java"])]},  # collect scan
     ]
     mock_dynamodb.Table.return_value = mock_table
 
-    with patch.object(list_jobs, "_trigger_harvest") as mock_trigger:
+    with patch.object(list_jobs, "_trigger_harvest", return_value=True) as mock_trigger:
         event = make_event({"domain": "Engineering", "skill": "Rust"})
         result = list_jobs.lambda_handler(event, None)
 
+        assert result["statusCode"] == 202
         body = json.loads(result["body"])
-        assert result["statusCode"] == 200
-        assert body["count"] == 0
-        mock_trigger.assert_not_called()
+        assert body["status"] == "harvesting"
+        assert body["skill"] == "Rust"
+        mock_trigger.assert_called_once()
 
 
 # ---------- on-demand harvest triggering ----------
@@ -173,16 +173,17 @@ def test_trigger_harvest_sends_ssm_command_and_records_status(mock_status_table,
     mock_status_table.get_item.return_value = {}  # no existing status
     mock_ssm.send_command.return_value = {"Command": {"CommandId": "cmd-abc"}}
 
-    result = list_jobs._trigger_harvest("Engineering", "engineering", "Python")
+    result = list_jobs._trigger_harvest("Engineering", "engineering#python", "Python")
 
     assert result is True
     call_kwargs = mock_ssm.send_command.call_args.kwargs
     assert call_kwargs["InstanceIds"] == ["i-test123"]
     assert "Engineering" in call_kwargs["Parameters"]["commands"][0]
     assert "Python" in call_kwargs["Parameters"]["commands"][0]
+    assert "--exclude-fallbacks" not in call_kwargs["Parameters"]["commands"][0]
 
     put_kwargs = mock_status_table.put_item.call_args.kwargs
-    assert put_kwargs["Item"]["domain"] == "engineering"
+    assert put_kwargs["Item"]["domain"] == "engineering#python"
     assert put_kwargs["Item"]["status"] == "in_progress"
     assert put_kwargs["Item"]["ssmCommandId"] == "cmd-abc"
 
@@ -251,7 +252,7 @@ def test_next_token_round_trips(mock_dynamodb):
     mock_table = MagicMock()
     mock_table.scan.side_effect = [
         {"Items": [make_job("1")]},  # raw check
-        {"Items": [make_job("1")], "LastEvaluatedKey": {"canonical_id": "1"}},  # real scan
+        {"Items": [make_job("1")], "LastEvaluatedKey": {"canonical_id": "1"}},
     ]
     mock_dynamodb.Table.return_value = mock_table
 
