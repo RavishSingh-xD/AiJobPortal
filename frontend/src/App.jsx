@@ -179,15 +179,8 @@ function AnimatedRoutes() {
 
 export default function App() {
   return (
-    <>
-      <div className="app-background" aria-hidden="true">
-        <div className="liquid-blob liquid-blob--1" />
-        <div className="liquid-blob liquid-blob--2" />
-        <div className="liquid-blob liquid-blob--3" />
-      </div>
-      <BrowserRouter>
-        <AnimatedRoutes />
-      </BrowserRouter>
-    </>
+    <BrowserRouter>
+      <AnimatedRoutes />
+    </BrowserRouter>
   );
 }

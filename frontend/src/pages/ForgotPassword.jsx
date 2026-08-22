@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { requestPasswordReset } from "../services/authService";
-import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 
 export default function ForgotPassword() {
@@ -26,25 +25,23 @@ export default function ForgotPassword() {
 
   return (
     <div className="page page--auth">
-      <div className="page-inner">
-        <GlassCard>
-          <div className="glass-card__header">
-            <h1 className="glass-card__title">Forgot password</h1>
-            <p className="glass-card__subtitle">
-              We&apos;ll email a reset code if this address has an account.
-            </p>
-          </div>
+      <div className="page-inner auth-form-column">
+        <Link to="/login" className="auth-back">Back to log in</Link>
 
-          {error && <div className="form-error">{error}</div>}
+        <div className="auth-form-card">
+          <h1 className="auth-form-card__title">Forgot password</h1>
+          <p className="auth-form-card__subtitle">
+            We&apos;ll email a reset code if this address has an account.
+          </p>
+
+          {error && <div className="auth-error">{error}</div>}
 
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="email">
-                Email
-              </label>
+            <div className="auth-field">
+              <label htmlFor="email">Email</label>
               <input
                 id="email"
-                className="form-input"
+                className="auth-input auth-input--no-icon"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -53,15 +50,15 @@ export default function ForgotPassword() {
                 disabled={loading}
               />
             </div>
-            <AnimatedButton type="submit" loading={loading}>
+            <button type="submit" className="auth-submit" disabled={loading}>
               {loading ? "Sending…" : "Send reset code"}
-            </AnimatedButton>
+            </button>
           </form>
 
-          <p className="form-link">
+          <p className="auth-footer">
             Remembered it? <Link to="/login">Log in</Link>
           </p>
-        </GlassCard>
+        </div>
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import {
 import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
+import PageHeader from "../components/PageHeader";
 import { EASE_OUT, DURATION } from "../components/motionConfig";
 import { apiErrorMessage } from "../utils/errors";
 
@@ -30,7 +31,6 @@ function formatVerificationStatus(status) {
 }
 
 function StatCard({
-  icon,
   label,
   value,
   delay,
@@ -54,9 +54,7 @@ function StatCard({
         onClick={onToggle}
         aria-expanded={expanded}
       >
-        <div className="stat-card__icon" aria-hidden="true">
-          {icon}
-        </div>
+        <div className="stat-card__icon" aria-hidden="true" />
         <div className="stat-card__summary">
           <p className="stat-card__label">{label}</p>
           <p className="stat-card__value">{value}</p>
@@ -209,13 +207,18 @@ export default function Dashboard() {
         <NavBar />
 
         <div className="dashboard-welcome">
-          <h1 className="dashboard-welcome__title">
-            Welcome back{userAttributes.name ? `, ${userAttributes.name}` : ""}
-          </h1>
+          <PageHeader
+            label="Dashboard"
+            title={`Welcome back${userAttributes.name ? `, ${userAttributes.name}` : ""}`}
+            subtitle={
+              userAttributes.verificationStatus
+                ? undefined
+                : "Your command center for roles, matches, and applications."
+            }
+            className="dashboard-welcome__header"
+          />
           {userAttributes.verificationStatus && (
-            <span
-              className={`status-badge status-badge--${badge.variant}`}
-            >
+            <span className={`status-badge status-badge--${badge.variant}`}>
               {badge.label}
             </span>
           )}
@@ -225,7 +228,6 @@ export default function Dashboard() {
 
         <div className="dashboard-stats">
           <StatCard
-            icon="📋"
             label="Applications"
             value={applicationsCount == null ? "…" : applicationsCount}
             delay={0.1}
@@ -240,8 +242,7 @@ export default function Dashboard() {
             </AnimatedButton>
           </StatCard>
           <StatCard
-            icon="⭐"
-            label="Saved Opportunities"
+            label="Saved"
             value={savedCount == null ? "…" : savedCount}
             delay={0.2}
             expanded={openCard.saved}
@@ -255,8 +256,7 @@ export default function Dashboard() {
             </AnimatedButton>
           </StatCard>
           <StatCard
-            icon="✨"
-            label="Profile Completion"
+            label="Profile completion"
             value={
               profileUiState === "loading"
                 ? "…"
@@ -356,45 +356,36 @@ export default function Dashboard() {
         </div>
 
         <div className="dashboard-cta-grid">
-          <GlassCard className="glass-card--section" delay={0.4}>
+          <div className="app-panel">
             <div className="dashboard-coming-soon">
-              <div className="dashboard-coming-soon__icon" aria-hidden="true">
-                🔍
-              </div>
-              <h2 className="dashboard-coming-soon__title">
-                Browse roles yourself
-              </h2>
+              <p className="micro-label">Browse</p>
+              <h2 className="dashboard-coming-soon__title">Find roles manually</h2>
               <p className="dashboard-coming-soon__text">
-                Search opportunities across Engineering, Healthcare,
-                and Business.
+                Search opportunities across Engineering, Healthcare, and Business.
               </p>
               <div className="dashboard-cta-grid__action">
-                <AnimatedButton secondary onClick={() => navigate("/jobs")}>
-                  Browse Roles
+                <AnimatedButton secondary className="btn--compact" onClick={() => navigate("/jobs")}>
+                  Browse roles
                 </AnimatedButton>
               </div>
             </div>
-          </GlassCard>
+          </div>
 
-          <GlassCard className="glass-card--section dashboard-cta-card--featured" delay={0.5}>
+          <div className="app-panel dashboard-cta-card--featured">
             <div className="dashboard-coming-soon">
-              <div className="dashboard-coming-soon__icon" aria-hidden="true">
-                ✨
-              </div>
-              <h2 className="dashboard-coming-soon__title">
-                Get matched by AI
-              </h2>
+              <p className="micro-label">Match</p>
+              <h2 className="dashboard-coming-soon__title">AI-ranked recommendation</h2>
               <p className="dashboard-coming-soon__text">
-                Submit your resume, take a quick domain test, and get a
-                ranked best-fit recommendation.
+                Submit your resume, take a quick domain test, and get a ranked
+                best-fit recommendation.
               </p>
               <div className="dashboard-cta-grid__action">
-                <AnimatedButton onClick={() => navigate("/match")}>
-                  Start Matching
+                <AnimatedButton className="btn--compact" onClick={() => navigate("/match")}>
+                  Start matching
                 </AnimatedButton>
               </div>
             </div>
-          </GlassCard>
+          </div>
         </div>
       </div>
     </div>

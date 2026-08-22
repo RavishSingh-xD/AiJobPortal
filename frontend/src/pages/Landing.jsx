@@ -1,6 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import LiquidGlassCanvas from "../components/LiquidGlassCanvas";
-import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 
 export default function Landing() {
@@ -8,28 +6,28 @@ export default function Landing() {
 
   return (
     <div className="page page--landing">
-      <LiquidGlassCanvas />
       <div className="landing">
         <p className="landing__brand">Avyukt</p>
-        <h1 className="landing__title">See the opportunities that actually fit you</h1>
+        <h1 className="landing__title">Opportunities that fit you</h1>
         <p className="landing__lede">
-          Ranked matches from your resume and a short domain test — then apply
-          with a profile that already knows who you are.
+          Ranked matches from your resume and a short domain test — apply with a
+          profile that already knows who you are.
         </p>
-        <GlassCard className="landing__card" hover={false}>
+        <div className="landing__card">
           <div className="landing__actions">
-            <AnimatedButton type="button" onClick={() => navigate("/signup")}>
+            <AnimatedButton type="button" className="btn--compact" onClick={() => navigate("/signup")}>
               Create account
             </AnimatedButton>
             <AnimatedButton
               type="button"
               secondary
+              className="btn--compact"
               onClick={() => navigate("/login")}
             >
               Log in
             </AnimatedButton>
           </div>
-        </GlassCard>
+        </div>
       </div>
     </div>
   );

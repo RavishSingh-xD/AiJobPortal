@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { listApplications } from "../services/apiClient";
-import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
-import { LoadingPulse, MotionListItem } from "../components/motionConfig";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
+import { MotionListItem } from "../components/motionConfig";
 
 const stateVariants = {
-  hidden: { opacity: 0, scale: 0.92 },
+  hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    scale: 1,
-    transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
   },
 };
 
@@ -49,103 +49,67 @@ export default function Applications() {
     <div className="page page--dashboard">
       <div className="dashboard">
         <NavBar />
-        <GlassCard className="glass-card--compact" hover={false}>
-          <div className="glass-card__header">
-            <h1 className="glass-card__title">Applications</h1>
-            <p className="glass-card__subtitle">
-              Roles you&apos;ve applied to from Avyukt.
-            </p>
-          </div>
-        </GlassCard>
+        <PageHeader
+          label="Track"
+          title="Applications"
+          subtitle="Roles you've applied to from Avyukt."
+        />
 
-        <div style={{ marginTop: "1.5rem" }}>
-          <AnimatePresence mode="wait">
-            {uiState === "loading" && (
-              <motion.div
-                key="loading"
-                className="success-state"
-                variants={stateVariants}
-                initial="hidden"
-                animate="visible"
-                exit="hidden"
-              >
-                <LoadingPulse>
-                  <div className="success-state__icon" aria-hidden="true">
-                    ⏳
-                  </div>
-                </LoadingPulse>
-                <h2 className="success-state__title">Loading your applications</h2>
-              </motion.div>
-            )}
+        <AnimatePresence mode="wait">
+          {uiState === "loading" && (
+            <motion.div key="loading" variants={stateVariants} initial="hidden" animate="visible" exit="hidden">
+              <EmptyState variant="loading" loading title="Loading applications" />
+            </motion.div>
+          )}
 
-            {uiState === "empty" && (
-              <motion.div
-                key="empty"
-                className="success-state"
-                variants={stateVariants}
-                initial="hidden"
-                animate="visible"
-                exit="hidden"
-              >
-                <div className="success-state__icon" aria-hidden="true">
-                  📋
-                </div>
-                <h2 className="success-state__title">No applications yet</h2>
-                <p className="success-state__text">
-                  When you apply from Find Roles, they&apos;ll show up here.
-                </p>
-              </motion.div>
-            )}
+          {uiState === "empty" && (
+            <motion.div key="empty" variants={stateVariants} initial="hidden" animate="visible" exit="hidden">
+              <EmptyState
+                title="No applications yet"
+                text="When you apply from Find Roles, they'll show up here."
+              />
+            </motion.div>
+          )}
 
-            {uiState === "error" && (
-              <motion.div
-                key="error"
-                className="success-state"
-                variants={stateVariants}
-                initial="hidden"
-                animate="visible"
-                exit="hidden"
-              >
-                <div className="success-state__icon" aria-hidden="true">
-                  ⚠️
-                </div>
-                <h2 className="success-state__title">Something went wrong</h2>
-                <p className="success-state__text">
-                  We couldn&apos;t load your applications right now.
-                </p>
-                <AnimatedButton onClick={loadApplications}>Try again</AnimatedButton>
-              </motion.div>
-            )}
+          {uiState === "error" && (
+            <motion.div key="error" variants={stateVariants} initial="hidden" animate="visible" exit="hidden">
+              <EmptyState
+                variant="error"
+                title="Could not load applications"
+                text="We couldn't load your applications right now."
+                action={<AnimatedButton onClick={loadApplications}>Try again</AnimatedButton>}
+              />
+            </motion.div>
+          )}
 
-            {uiState === "ready" && (
-              <motion.div
-                key="ready"
-                className="match-listings"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                {applications.map((row, index) => (
-                  <MotionListItem
-                    key={row.canonicalId}
-                    index={index}
-                    className="match-listing-card"
-                  >
-                    <h3 className="match-listing-card__title">
-                      {row.jobTitle || "Untitled role"}
-                    </h3>
-                    <p className="match-listing-card__meta">
-                      {[row.company, row.domain].filter(Boolean).join(" · ")}
-                    </p>
-                    <p className="match-listing-card__meta">
-                      {row.status || "applied"} · {formatAppliedAt(row.appliedAt)}
-                    </p>
-                  </MotionListItem>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+          {uiState === "ready" && (
+            <motion.div
+              key="ready"
+              className="ledger"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              {applications.map((row, index) => (
+                <MotionListItem
+                  key={row.canonicalId}
+                  index={index}
+                  className="match-listing-card"
+                >
+                  <h3 className="match-listing-card__title">
+                    {row.jobTitle || "Untitled role"}
+                  </h3>
+                  <p className="match-listing-card__meta">
+                    {[row.company, row.domain].filter(Boolean).join(" · ")}
+                  </p>
+                  <p className="match-listing-card__meta tabular-nums">
+                    {row.status || "applied"} · {formatAppliedAt(row.appliedAt)}
+                  </p>
+                </MotionListItem>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

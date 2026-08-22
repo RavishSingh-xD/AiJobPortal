@@ -13,9 +13,9 @@ import {
   createApplication,
   listSubdomains,
 } from "../services/apiClient";
-import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
+import PageHeader from "../components/PageHeader";
 import { EASE_OUT, DURATION, LoadingPulse, MotionListItem } from "../components/motionConfig";
 import SkillGapReport from "../components/SkillGapReport";
 import AlmostThereSection from "../components/AlmostThereSection";
@@ -43,7 +43,7 @@ function isValidResumeFile(file) {
   return name.endsWith(".pdf") || name.endsWith(".docx");
 }
 
-function FileDropZone({ id, label, icon, file, onChange, disabled }) {
+function FileDropZone({ id, label, file, onChange, disabled }) {
   return (
     <div className={`drop-zone ${file ? "drop-zone--has-file" : ""}`}>
       <input
@@ -55,7 +55,7 @@ function FileDropZone({ id, label, icon, file, onChange, disabled }) {
         disabled={disabled}
       />
       <span className="drop-zone__icon" aria-hidden="true">
-        {file ? "✓" : icon}
+        {file ? "OK" : "PDF"}
       </span>
       {file ? (
         <span className="drop-zone__filename">{file.name}</span>
@@ -656,7 +656,12 @@ export default function MatchWizard() {
     <div className="page page--dashboard">
       <div className="dashboard">
         <NavBar />
-        <GlassCard hover={false} className="glass-card--section">
+        <PageHeader
+          label="Match"
+          title="AI matching"
+          subtitle="Resume scoring, domain test, and ranked recommendations."
+        />
+        <div className="app-panel match-wizard-panel">
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div key="profile" {...stepMotion}>
@@ -737,7 +742,6 @@ export default function MatchWizard() {
                     </label>
                     <FileDropZone
                       id="resume"
-                      icon="📄"
                       label="Upload a PDF or DOCX resume"
                       file={resume}
                       onChange={handleResumeChange}
@@ -1251,7 +1255,7 @@ export default function MatchWizard() {
               </motion.div>
             )}
           </AnimatePresence>
-        </GlassCard>
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 
-export const EASE_OUT = [0.22, 1, 0.36, 1];
-export const DURATION = 0.28;
+export const EASE_OUT = [0.16, 1, 0.3, 1];
+export const DURATION = 0.2;
 
 export function LoadingPulse({ children, className = "" }) {
   const reduced = useReducedMotion();

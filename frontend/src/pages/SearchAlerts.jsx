@@ -6,9 +6,10 @@ import {
   ackSavedSearch,
   getSavedSearchAlerts,
 } from "../services/apiClient";
-import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
 import { apiErrorMessage } from "../utils/errors";
 
 export default function SearchAlerts() {
@@ -61,34 +62,38 @@ export default function SearchAlerts() {
     <div className="page page--dashboard">
       <div className="dashboard">
         <NavBar />
-        <GlassCard hover={false} className="glass-card--section">
-          <div className="glass-card__header">
-            <h1 className="glass-card__title">Search alerts</h1>
-            <p className="glass-card__subtitle">
-              New listings that match your saved searches.
-            </p>
-          </div>
+        <PageHeader
+          label="Alerts"
+          title="Search alerts"
+          subtitle="New listings that match your saved searches."
+        />
 
-          {loading && <p className="compare-muted">Loading…</p>}
-          {error && <div className="form-error">{error}</div>}
+        {loading && <EmptyState variant="loading" loading title="Loading alerts" />}
+        {error && <div className="form-error">{error}</div>}
 
-          {!loading && alerts.length === 0 && (
-            <p className="compare-muted">No new matches right now. Save a search from Browse Roles.</p>
-          )}
+        {!loading && alerts.length === 0 && !error && (
+          <EmptyState
+            title="No new matches"
+            text="Save a search from Browse Roles to get alerts here."
+          />
+        )}
 
-          {alerts.map((alert) => (
-            <section key={alert.searchId} className="discovery-panel">
+        {alerts.map((alert) => (
+          <section key={alert.searchId} className="discovery-panel">
+            <div className="discovery-panel__header">
               <h2 className="discovery-panel__title">
                 {alert.label || `${alert.domain} search`}
                 <span className="alert-badge">{alert.newMatchCount} new</span>
               </h2>
-              <ul className="alert-list">
-                {(alert.newMatches || []).map((job) => (
-                  <li key={job.canonical_id} className="alert-list__item">
-                    <strong>{job.title}</strong> · {job.company}
-                  </li>
-                ))}
-              </ul>
+            </div>
+            <ul className="alert-list">
+              {(alert.newMatches || []).map((job) => (
+                <li key={job.canonical_id} className="alert-list__item">
+                  <strong>{job.title}</strong> · {job.company}
+                </li>
+              ))}
+            </ul>
+            <div style={{ padding: "0.75rem 1rem" }}>
               <AnimatedButton
                 type="button"
                 className="btn--compact"
@@ -101,43 +106,45 @@ export default function SearchAlerts() {
               >
                 Mark as seen
               </AnimatedButton>
-            </section>
-          ))}
+            </div>
+          </section>
+        ))}
 
-          {!loading && searches.length > 0 && (
-            <section className="discovery-panel">
+        {!loading && searches.length > 0 && (
+          <section className="discovery-panel">
+            <div className="discovery-panel__header">
               <h2 className="discovery-panel__title">Saved searches</h2>
-              <ul className="alert-list">
-                {searches.map((search) => (
-                  <li key={search.searchId} className="alert-list__item alert-list__item--row">
-                    <span>
-                      {search.label || search.domain}
-                      {search.skill ? ` · ${search.skill}` : ""}
-                      {search.employmentType ? ` · ${search.employmentType}` : ""}
-                    </span>
-                    <AnimatedButton
-                      secondary
-                      type="button"
-                      className="btn--compact"
-                      onClick={() => handleDelete(search.searchId)}
-                    >
-                      Remove
-                    </AnimatedButton>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+            </div>
+            <ul className="alert-list">
+              {searches.map((search) => (
+                <li key={search.searchId} className="alert-list__item alert-list__item--row">
+                  <span>
+                    {search.label || search.domain}
+                    {search.skill ? ` · ${search.skill}` : ""}
+                    {search.employmentType ? ` · ${search.employmentType}` : ""}
+                  </span>
+                  <AnimatedButton
+                    secondary
+                    type="button"
+                    className="btn--compact"
+                    onClick={() => handleDelete(search.searchId)}
+                  >
+                    Remove
+                  </AnimatedButton>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
-          <div style={{ marginTop: "1.25rem", display: "flex", gap: "0.75rem" }}>
-            <AnimatedButton secondary type="button" onClick={() => navigate("/jobs")}>
-              Browse roles
-            </AnimatedButton>
-            <AnimatedButton secondary type="button" onClick={() => navigate("/dashboard")}>
-              Dashboard
-            </AnimatedButton>
-          </div>
-        </GlassCard>
+        <div style={{ marginTop: "1.25rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          <AnimatedButton secondary type="button" className="btn--compact" onClick={() => navigate("/jobs")}>
+            Browse roles
+          </AnimatedButton>
+          <AnimatedButton secondary type="button" className="btn--compact" onClick={() => navigate("/dashboard")}>
+            Dashboard
+          </AnimatedButton>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from "framer-motion";
+import { EASE_OUT } from "./motionConfig";
 
 export default function AnimatedButton({
   children,
@@ -21,9 +22,9 @@ export default function AnimatedButton({
   return (
     <motion.button
       className={classes}
-      whileHover={interactive ? { scale: 1.02 } : undefined}
-      whileTap={interactive ? { scale: 0.97 } : undefined}
-      transition={{ type: "spring", stiffness: 420, damping: 32 }}
+      whileHover={interactive ? { opacity: 0.88 } : undefined}
+      whileTap={interactive ? { opacity: 0.75 } : undefined}
+      transition={{ duration: 0.15, ease: EASE_OUT }}
       disabled={loading || props.disabled}
       {...props}
     >

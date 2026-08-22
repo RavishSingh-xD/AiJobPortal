@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { confirmPasswordReset } from "../services/authService";
-import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 
 export default function ResetPassword() {
@@ -32,26 +31,24 @@ export default function ResetPassword() {
 
   return (
     <div className="page page--auth">
-      <div className="page-inner">
-        <GlassCard>
-          <div className="glass-card__header">
-            <h1 className="glass-card__title">Choose a new password</h1>
-            <p className="glass-card__subtitle">
-              Enter the code from your email and a new password. If you don&apos;t
-              see the email, check your spam or junk folder.
-            </p>
-          </div>
+      <div className="page-inner auth-form-column">
+        <Link to="/login" className="auth-back">Back to log in</Link>
 
-          {error && <div className="form-error">{error}</div>}
+        <div className="auth-form-card">
+          <h1 className="auth-form-card__title">New password</h1>
+          <p className="auth-form-card__subtitle">
+            Enter the code from your email and a new password. Check spam if the
+            email isn&apos;t in your inbox.
+          </p>
+
+          {error && <div className="auth-error">{error}</div>}
 
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="email">
-                Email
-              </label>
+            <div className="auth-field">
+              <label htmlFor="email">Email</label>
               <input
                 id="email"
-                className="form-input"
+                className="auth-input auth-input--no-icon"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -60,13 +57,11 @@ export default function ResetPassword() {
                 disabled={loading}
               />
             </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="code">
-                Reset code
-              </label>
+            <div className="auth-field">
+              <label htmlFor="code">Reset code</label>
               <input
                 id="code"
-                className="form-input"
+                className="auth-input auth-input--no-icon"
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -76,17 +71,14 @@ export default function ResetPassword() {
                 autoComplete="one-time-code"
               />
               <p className="form-hint">
-                Reset codes can end up in spam or junk — check there if your
-                inbox is empty.
+                Reset codes can end up in spam or junk — check there if your inbox is empty.
               </p>
             </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="password">
-                New password
-              </label>
+            <div className="auth-field">
+              <label htmlFor="password">New password</label>
               <input
                 id="password"
-                className="form-input"
+                className="auth-input auth-input--no-icon"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -96,15 +88,15 @@ export default function ResetPassword() {
                 disabled={loading}
               />
             </div>
-            <AnimatedButton type="submit" loading={loading}>
+            <button type="submit" className="auth-submit" disabled={loading}>
               {loading ? "Updating…" : "Reset password"}
-            </AnimatedButton>
+            </button>
           </form>
 
-          <p className="form-link">
+          <p className="auth-footer">
             Back to <Link to="/login">log in</Link>
           </p>
-        </GlassCard>
+        </div>
       </div>
     </div>
   );

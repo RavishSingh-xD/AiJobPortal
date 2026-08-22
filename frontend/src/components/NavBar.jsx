@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { getUserProfile, logoutUser } from "../services/authService";
-import GlassCard from "./GlassCard";
 import AnimatedButton from "./AnimatedButton";
 
 export default function NavBar() {
@@ -34,9 +33,15 @@ export default function NavBar() {
   };
 
   return (
-    <GlassCard className="glass-card--compact dashboard-topbar" hover={false}>
+    <header className="dashboard-topbar">
       <div className="dashboard-topbar__brand">
-        <img src="/avyukt-logo.png" alt="Avyukt Logo" className="dashboard-topbar__logo-img" style={{ width: '2rem', height: '2rem', borderRadius: 'var(--radius-sm)' }} />
+        <img
+          src="/avyukt-logo.png"
+          alt=""
+          className="dashboard-topbar__logo-img"
+          width={28}
+          height={28}
+        />
         Avyukt
       </div>
       <nav className="navbar__links" aria-label="Main">
@@ -92,6 +97,6 @@ export default function NavBar() {
           {loading ? "Signing out…" : "Log out"}
         </AnimatedButton>
       </div>
-    </GlassCard>
+    </header>
   );
 }

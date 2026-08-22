@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { resendSignupCode, verifyOtp } from "../services/authService";
-import GlassCard from "../components/GlassCard";
-import AnimatedButton from "../components/AnimatedButton";
 
 export default function VerifyEmail() {
   const navigate = useNavigate();
@@ -57,30 +55,28 @@ export default function VerifyEmail() {
 
   return (
     <div className="page page--auth">
-      <div className="page-inner">
-        <GlassCard>
-          <div className="glass-card__header">
-            <h1 className="glass-card__title">Verify your email</h1>
-            <p className="glass-card__subtitle">
-              Enter the confirmation code we emailed you to activate your account.
-            </p>
-          </div>
+      <div className="page-inner auth-form-column">
+        <Link to="/login" className="auth-back">Back to log in</Link>
+
+        <div className="auth-form-card">
+          <h1 className="auth-form-card__title">Verify email</h1>
+          <p className="auth-form-card__subtitle">
+            Enter the confirmation code we emailed you to activate your account.
+          </p>
 
           <p className="form-notice" role="note">
             <strong>Check spam for your OTP.</strong> {SPAM_OTP_NOTICE}
           </p>
 
-          {error && <div className="form-error">{error}</div>}
+          {error && <div className="auth-error">{error}</div>}
           {info && !error && <p className="form-info">{info}</p>}
 
           <form onSubmit={handleVerify}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="email">
-                Email
-              </label>
+            <div className="auth-field">
+              <label htmlFor="email">Email</label>
               <input
                 id="email"
-                className="form-input"
+                className="auth-input auth-input--no-icon"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -89,13 +85,11 @@ export default function VerifyEmail() {
                 disabled={loading || resending}
               />
             </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="code">
-                Verification code
-              </label>
+            <div className="auth-field">
+              <label htmlFor="code">Verification code</label>
               <input
                 id="code"
-                className="form-input"
+                className="auth-input auth-input--no-icon"
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -105,16 +99,15 @@ export default function VerifyEmail() {
                 autoComplete="one-time-code"
               />
               <p className="form-hint">
-                Still nothing? Look in spam, junk, and promotions before you
-                resend.
+                Still nothing? Look in spam, junk, and promotions before you resend.
               </p>
             </div>
-            <AnimatedButton type="submit" loading={loading} disabled={resending}>
+            <button type="submit" className="auth-submit" disabled={loading || resending}>
               {loading ? "Verifying…" : "Verify email"}
-            </AnimatedButton>
+            </button>
           </form>
 
-          <p className="form-link">
+          <p className="auth-footer">
             <button
               type="button"
               className="form-link__button"
@@ -124,10 +117,10 @@ export default function VerifyEmail() {
               {resending ? "Sending…" : "Resend code"}
             </button>
           </p>
-          <p className="form-link">
+          <p className="auth-footer">
             Already verified? <Link to="/login">Log in</Link>
           </p>
-        </GlassCard>
+        </div>
       </div>
     </div>
   );
