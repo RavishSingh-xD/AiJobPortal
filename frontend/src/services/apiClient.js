@@ -104,6 +104,41 @@ export async function updateProfile(payload) {
   return data;
 }
 
+export async function createSavedSearch(payload) {
+  const { data } = await api.post("/saved-searches", payload);
+  return data;
+}
+
+export async function listSavedSearches() {
+  const { data } = await api.get("/saved-searches");
+  return data;
+}
+
+export async function deleteSavedSearch(searchId) {
+  const { data } = await api.delete("/saved-searches", {
+    params: { searchId },
+  });
+  return data;
+}
+
+export async function getSavedSearchAlerts() {
+  const { data } = await api.get("/saved-searches/alerts");
+  return data;
+}
+
+export async function ackSavedSearch(searchId, canonicalIds) {
+  const { data } = await api.post("/saved-searches/ack", {
+    searchId,
+    canonicalIds,
+  });
+  return data;
+}
+
+export async function compareJobs(payload) {
+  const { data } = await api.post("/jobs/compare", payload);
+  return data;
+}
+
 export async function uploadFileToS3(uploadUrl, file) {
   const contentType = file.type || "image/jpeg";
   await axios.put(uploadUrl, file, {

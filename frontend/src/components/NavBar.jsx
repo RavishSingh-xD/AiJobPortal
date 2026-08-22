@@ -65,6 +65,14 @@ export default function NavBar() {
           Applications
         </NavLink>
         <NavLink
+          to="/search-alerts"
+          className={({ isActive }) =>
+            `navbar__link${isActive ? " navbar__link--active" : ""}`
+          }
+        >
+          Alerts
+        </NavLink>
+        <NavLink
           to="/saved-jobs"
           className={({ isActive }) =>
             `navbar__link${isActive ? " navbar__link--active" : ""}`

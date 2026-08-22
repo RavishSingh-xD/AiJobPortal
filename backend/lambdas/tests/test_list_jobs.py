@@ -324,16 +324,16 @@ def test_get_all_closed_returns_empty_list_not_error(mock_dynamodb):
 
 
 def test_active_definition_matches_get_matched_jobs():
-    from lambdas.match import get_matched_jobs as gmj
+    from lambdas.match import listing_utils as lu
 
-    assert list_jobs.CLOSED_STATUSES == gmj.CLOSED_STATUSES
+    assert list_jobs.CLOSED_STATUSES == lu.CLOSED_STATUSES
 
     open_item = make_job("1", status="ACTIVE", display_status="Active")
     closed_item = make_job("2", status="closed", display_status="Closed")
     expired_via_display = {"status": "", "display_status": "expired"}
     assert list_jobs._is_open_listing(open_item) is True
-    assert gmj._is_open_listing(open_item) is True
+    assert lu.is_open_listing(open_item) is True
     assert list_jobs._is_open_listing(closed_item) is False
-    assert gmj._is_open_listing(closed_item) is False
+    assert lu.is_open_listing(closed_item) is False
     assert list_jobs._is_open_listing(expired_via_display) is False
-    assert gmj._is_open_listing(expired_via_display) is False
+    assert lu.is_open_listing(expired_via_display) is False

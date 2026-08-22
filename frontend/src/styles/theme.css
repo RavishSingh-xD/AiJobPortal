@@ -1342,6 +1342,193 @@ select.filter-input option {
   margin: 0 0 1rem;
 }
 
+.discovery-panel {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.discovery-panel__header {
+  margin-bottom: 0.75rem;
+}
+
+.discovery-panel__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  color: var(--text-primary);
+}
+
+.discovery-panel__summary {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.skill-gap-group {
+  margin-top: 0.85rem;
+}
+
+.skill-gap-group__title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.skill-gap-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skill-gap-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.skill-gap-item--missing {
+  border-left: 3px solid #f59e0b;
+}
+
+.skill-gap-item--strong {
+  border-left: 3px solid #22c55e;
+}
+
+.skill-gap-item__meta {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.skill-gap-item__link {
+  font-size: 0.85rem;
+  color: var(--accent-primary);
+  text-decoration: none;
+}
+
+.almost-there-step {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.match-listing-card__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.match-listing-card--almost {
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.compare-check {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.compare-actions {
+  margin-top: 1rem;
+}
+
+.compare-muted {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.compare-table-wrap {
+  overflow-x: auto;
+}
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.compare-table th,
+.compare-table td {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.compare-table thead th {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.compare-pow__bar {
+  position: relative;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.compare-pow__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #a78bfa);
+}
+
+.compare-pow__marker {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 12px;
+  background: #f59e0b;
+}
+
+.compare-pow__label {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.alert-badge {
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.25);
+  font-size: 0.75rem;
+}
+
+.alert-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+.alert-list__item {
+  padding: 0.45rem 0;
+  color: var(--text-secondary);
+}
+
+.alert-list__item--row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 @media (max-width: 900px) {
 
   .glass-card--compact,

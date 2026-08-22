@@ -16,10 +16,12 @@ import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
 import { EASE_OUT, DURATION, LoadingPulse, MotionListItem } from "../components/motionConfig";
-import { apiErrorMessage } from "../utils/errors";
+import SkillGapReport from "../components/SkillGapReport";
+import AlmostThereSection from "../components/AlmostThereSection";
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 40;
+const MAX_COMPARE = 4;
 const MAX_SKILL_TAGS = 5;
 
 const TEST_DOMAINS = ["Engineering", "Business", "Healthcare"];
@@ -106,10 +108,24 @@ function MatchListingCard({
   applying = false,
   applyError,
   onApply,
+  compareSelected = false,
+  onCompareToggle,
 }) {
   return (
     <MotionListItem index={index} className="match-listing-card">
-      <h3 className="match-listing-card__title">{job.title || "Untitled role"}</h3>
+      <div className="match-listing-card__row">
+        <h3 className="match-listing-card__title">{job.title || "Untitled role"}</h3>
+        {onCompareToggle && job.canonical_id ? (
+          <label className="compare-check">
+            <input
+              type="checkbox"
+              checked={compareSelected}
+              onChange={() => onCompareToggle(job)}
+            />
+            Compare
+          </label>
+        ) : null}
+      </div>
       <p className="match-listing-card__meta">
         {[job.company, job.employment_type].filter(Boolean).join(" · ")}
       </p>
@@ -167,6 +183,9 @@ export default function MatchWizard() {
   const [matchesError, setMatchesError] = useState("");
   const [matchedInternships, setMatchedInternships] = useState([]);
   const [matchedJobsList, setMatchedJobsList] = useState([]);
+  const [almostThere, setAlmostThere] = useState({ internships: [], jobs: [] });
+  const [skillGapReport, setSkillGapReport] = useState(null);
+  const [compareIds, setCompareIds] = useState([]);
   const [matchesMeta, setMatchesMeta] = useState({ domain: "", skill: "" });
 
   // Pillar Step 4 (wizard step 8) — final recommendation
@@ -371,6 +390,9 @@ export default function MatchWizard() {
     setMatchesError("");
     setMatchedInternships([]);
     setMatchedJobsList([]);
+    setAlmostThere({ internships: [], jobs: [] });
+    setSkillGapReport(null);
+    setCompareIds([]);
     setMatchesMeta({ domain: "", skill: "" });
     setRecUiState("idle");
     setRecError("");
@@ -378,6 +400,36 @@ export default function MatchWizard() {
     setReadinessSummary("");
     setExplanationsAvailable(true);
     setStep(1);
+  };
+
+  const handleCompareToggle = (job) => {
+    const id = job.canonical_id;
+    if (!id) {
+      return;
+    }
+    setCompareIds((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((row) => row !== id);
+      }
+      if (prev.length >= MAX_COMPARE) {
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const handleOpenCompare = () => {
+    if (compareIds.length < 2) {
+      return;
+    }
+    const params = new URLSearchParams({
+      domain: matchesMeta.domain || testDomain,
+      ids: compareIds.join(","),
+    });
+    if (sessionId) {
+      params.set("sessionId", sessionId);
+    }
+    navigate(`/compare?${params.toString()}`);
   };
 
   const handleLoadMatchedJobs = async () => {
@@ -388,18 +440,29 @@ export default function MatchWizard() {
     setMatchesUiState("loading");
     setMatchedInternships([]);
     setMatchedJobsList([]);
+    setAlmostThere({ internships: [], jobs: [] });
+    setSkillGapReport(null);
+    setCompareIds([]);
     setStep(7);
     try {
       const data = await getMatchedJobs(sessionId);
       const internships = Array.isArray(data.internships) ? data.internships : [];
       const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+      const almost = data.almostThere || { internships: [], jobs: [] };
       setMatchedInternships(internships);
       setMatchedJobsList(jobs);
+      setAlmostThere(almost);
+      setSkillGapReport(data.skillGapReport || null);
       setMatchesMeta({
         domain: data.domain || "",
         skill: data.skill || "",
       });
-      setMatchesUiState(internships.length + jobs.length > 0 ? "ready" : "empty");
+      const total =
+        internships.length +
+        jobs.length +
+        (almost.internships?.length || 0) +
+        (almost.jobs?.length || 0);
+      setMatchesUiState(total > 0 ? "ready" : "empty");
     } catch (err) {
       setMatchesError(
         apiErrorMessage(err, "Could not load matched opportunities. Please try again.")
@@ -948,52 +1011,78 @@ export default function MatchWizard() {
                 )}
 
                 {matchesUiState === "empty" && (
-                  <div className="success-state">
-                    <div className="success-state__icon" aria-hidden="true">
-                      📭
+                  <>
+                    {skillGapReport && <SkillGapReport report={skillGapReport} />}
+                    <AlmostThereSection
+                      almostThere={almostThere}
+                      compareSelectedIds={new Set(compareIds)}
+                      onCompareToggle={handleCompareToggle}
+                    />
+                    <div className="success-state">
+                      <div className="success-state__icon" aria-hidden="true">
+                        📭
+                      </div>
+                      <h2 className="success-state__title">No matches right now</h2>
+                      <p className="success-state__text">
+                        No open listings currently match your skill and PoW score.
+                        Check almost-there roles above or get a readiness recommendation.
+                      </p>
                     </div>
-                    <h2 className="success-state__title">No matches right now</h2>
-                    <p className="success-state__text">
-                      No open listings currently match your skill and PoW score.
-                      You can still get a readiness recommendation with tips on
-                      what to strengthen next.
-                    </p>
-                  </div>
+                  </>
                 )}
 
                 {matchesUiState === "ready" && (
-                  <div className="match-listings">
-                    {matchedInternships.length > 0 && (
-                      <section className="match-listings__section">
-                        <h2 className="match-listings__heading">Internships</h2>
-                        {matchedInternships.map((job, index) => (
-                          <MatchListingCard
-                            key={job.canonical_id || job.title}
-                            job={job}
-                            index={index}
-                            applying={applyingId === job.canonical_id}
-                            applyError={applyErrors[job.canonical_id]}
-                            onApply={handleApply}
-                          />
-                        ))}
-                      </section>
+                  <>
+                    <SkillGapReport report={skillGapReport} />
+                    <div className="match-listings">
+                      {matchedInternships.length > 0 && (
+                        <section className="match-listings__section">
+                          <h2 className="match-listings__heading">Internships</h2>
+                          {matchedInternships.map((job, index) => (
+                            <MatchListingCard
+                              key={job.canonical_id || job.title}
+                              job={job}
+                              index={index}
+                              compareSelected={compareIds.includes(job.canonical_id)}
+                              onCompareToggle={handleCompareToggle}
+                              applying={applyingId === job.canonical_id}
+                              applyError={applyErrors[job.canonical_id]}
+                              onApply={handleApply}
+                            />
+                          ))}
+                        </section>
+                      )}
+                      {matchedJobsList.length > 0 && (
+                        <section className="match-listings__section">
+                          <h2 className="match-listings__heading">Jobs</h2>
+                          {matchedJobsList.map((job, index) => (
+                            <MatchListingCard
+                              key={job.canonical_id || job.title}
+                              job={job}
+                              index={index}
+                              compareSelected={compareIds.includes(job.canonical_id)}
+                              onCompareToggle={handleCompareToggle}
+                              applying={applyingId === job.canonical_id}
+                              applyError={applyErrors[job.canonical_id]}
+                              onApply={handleApply}
+                            />
+                          ))}
+                        </section>
+                      )}
+                    </div>
+                    <AlmostThereSection
+                      almostThere={almostThere}
+                      compareSelectedIds={new Set(compareIds)}
+                      onCompareToggle={handleCompareToggle}
+                    />
+                    {compareIds.length >= 2 && (
+                      <div className="compare-actions">
+                        <AnimatedButton type="button" onClick={handleOpenCompare}>
+                          Compare {compareIds.length} roles
+                        </AnimatedButton>
+                      </div>
                     )}
-                    {matchedJobsList.length > 0 && (
-                      <section className="match-listings__section">
-                        <h2 className="match-listings__heading">Jobs</h2>
-                        {matchedJobsList.map((job, index) => (
-                          <MatchListingCard
-                            key={job.canonical_id || job.title}
-                            job={job}
-                            index={index}
-                            applying={applyingId === job.canonical_id}
-                            applyError={applyErrors[job.canonical_id]}
-                            onApply={handleApply}
-                          />
-                        ))}
-                      </section>
-                    )}
-                  </div>
+                  </>
                 )}
 
                 {(matchesUiState === "ready" || matchesUiState === "empty") && (

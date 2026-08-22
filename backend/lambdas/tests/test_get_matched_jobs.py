@@ -135,6 +135,10 @@ def test_successful_match_filters_splits_and_sorts(mock_table, mock_scan):
     assert "closed-intern" not in intern_ids
     assert "over-job" not in job_ids
 
+    assert "almostThere" in body
+    assert "skillGapReport" in body
+    assert isinstance(body["skillGapReport"]["missingSkills"], list)
+
     for row in body["internships"] + body["jobs"]:
         assert "internal_hash" not in row
         assert "required_skills" in row
@@ -149,6 +153,7 @@ def test_successful_match_filters_splits_and_sorts(mock_table, mock_scan):
             "is_fallback",
             "employment_type",
             "required_skills",
+            "source",
         }
 
     assert body["internships"][0]["required_skills"] == ["Python"]

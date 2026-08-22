@@ -14,6 +14,8 @@ import JobListings from "./pages/JobListings";
 import MatchWizard from "./pages/MatchWizard";
 import Applications from "./pages/Applications";
 import SavedJobs from "./pages/SavedJobs";
+import CompareRoles from "./pages/CompareRoles";
+import SearchAlerts from "./pages/SearchAlerts";
 
 function ProtectedRoute({ children }) {
   const [checking, setChecking] = useState(true);
@@ -95,6 +97,22 @@ function AnimatedRoutes() {
           element={
             <ProtectedRoute>
               <SavedJobs />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/compare"
+          element={
+            <ProtectedRoute>
+              <CompareRoles />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/search-alerts"
+          element={
+            <ProtectedRoute>
+              <SearchAlerts />
             </ProtectedRoute>
           }
         />

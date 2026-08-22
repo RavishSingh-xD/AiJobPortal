@@ -6,6 +6,7 @@ import {
   saveJob,
   unsaveJob,
   listSavedJobs,
+  createSavedSearch,
 } from "../services/apiClient";
 import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
@@ -14,6 +15,7 @@ import { LoadingPulse } from "../components/motionConfig";
 import { apiErrorMessage } from "../utils/errors";
 
 const DOMAINS = ["Engineering", "Business", "Healthcare"];
+const MAX_COMPARE = 4;
 const MAX_SKILL_TAGS = 5;
 const MAX_POLL_ATTEMPTS = 40;
 
@@ -84,6 +86,8 @@ function JobCard({
   saveError,
   onGetMatched,
   onToggleSave,
+  compareSelected,
+  onCompareToggle,
 }) {
   return (
     <GlassCard className="glass-card--compact" delay={index * 0.05}>
@@ -98,6 +102,16 @@ function JobCard({
       >
         {job.title}
       </h3>
+      {onCompareToggle && job.canonical_id ? (
+        <label className="compare-check" style={{ marginBottom: "0.5rem" }}>
+          <input
+            type="checkbox"
+            checked={compareSelected}
+            onChange={() => onCompareToggle(job)}
+          />
+          Compare
+        </label>
+      ) : null}
       <p
         style={{
           fontSize: "0.9375rem",
@@ -157,6 +171,9 @@ export default function JobListings() {
   const [savedIds, setSavedIds] = useState(() => new Set());
   const [savingId, setSavingId] = useState(null);
   const [cardErrors, setCardErrors] = useState({});
+  const [compareIds, setCompareIds] = useState([]);
+  const [saveSearchMessage, setSaveSearchMessage] = useState("");
+  const [saveSearchLoading, setSaveSearchLoading] = useState(false);
   const pollCountRef = useRef(0);
   const pollTimerRef = useRef(null);
   const pollParamsRef = useRef(null);
@@ -314,6 +331,51 @@ export default function JobListings() {
     navigate("/match");
   };
 
+  const handleCompareToggle = (job) => {
+    const id = job.canonical_id;
+    if (!id) {
+      return;
+    }
+    setCompareIds((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((row) => row !== id);
+      }
+      if (prev.length >= MAX_COMPARE) {
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const handleOpenCompare = () => {
+    if (compareIds.length < 2) {
+      return;
+    }
+    const params = new URLSearchParams({
+      domain,
+      ids: compareIds.join(","),
+    });
+    navigate(`/compare?${params.toString()}`);
+  };
+
+  const handleSaveSearch = async () => {
+    setSaveSearchLoading(true);
+    setSaveSearchMessage("");
+    try {
+      await createSavedSearch({
+        domain,
+        skill: skill.trim(),
+        employmentType: employmentType || "",
+        label: [domain, skill.trim(), employmentType].filter(Boolean).join(" · "),
+      });
+      setSaveSearchMessage("Search saved — we'll alert you when new roles match.");
+    } catch (err) {
+      setSaveSearchMessage(apiErrorMessage(err, "Could not save this search."));
+    } finally {
+      setSaveSearchLoading(false);
+    }
+  };
+
   const handleToggleSave = async (job) => {
     const canonicalId = job.canonical_id;
     if (!canonicalId || savingId) {
@@ -417,7 +479,34 @@ export default function JobListings() {
             >
               Search
             </AnimatedButton>
+            <AnimatedButton
+              secondary
+              className="btn--compact"
+              loading={saveSearchLoading}
+              onClick={handleSaveSearch}
+            >
+              Save search
+            </AnimatedButton>
+            <AnimatedButton
+              secondary
+              className="btn--compact"
+              onClick={() => navigate("/search-alerts")}
+            >
+              Alerts
+            </AnimatedButton>
           </div>
+          {saveSearchMessage && (
+            <p className="compare-muted" style={{ marginTop: "0.75rem" }}>
+              {saveSearchMessage}
+            </p>
+          )}
+          {compareIds.length >= 2 && (
+            <div className="compare-actions" style={{ marginTop: "0.75rem" }}>
+              <AnimatedButton type="button" className="btn--compact" onClick={handleOpenCompare}>
+                Compare {compareIds.length} roles
+              </AnimatedButton>
+            </div>
+          )}
         </GlassCard>
 
         <div style={{ marginTop: "1.5rem" }}>
@@ -534,6 +623,8 @@ export default function JobListings() {
                       saveError={errors.save}
                       onGetMatched={handleGetMatched}
                       onToggleSave={handleToggleSave}
+                      compareSelected={Boolean(id && compareIds.includes(id))}
+                      onCompareToggle={handleCompareToggle}
                     />
                   );
                 })}
