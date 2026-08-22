@@ -20,6 +20,7 @@ import SkillGapReport from "../components/SkillGapReport";
 import AlmostThereSection from "../components/AlmostThereSection";
 import { apiErrorMessage } from "../utils/errors";
 import { formatResumeScoringError } from "../utils/resumeUpload";
+import { getSubdomainSuggestions, DOMAIN_SKILL_EXAMPLES } from "../utils/subdomainSuggestions";
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 40;
@@ -27,11 +28,6 @@ const MAX_COMPARE = 4;
 const MAX_SKILL_TAGS = 5;
 
 const TEST_DOMAINS = ["Engineering", "Business", "Healthcare"];
-const SKILL_DEFAULT_BY_DOMAIN = {
-  Engineering: "Software",
-  Business: "Management",
-  Healthcare: "Medicine",
-};
 
 function wizardStepMotion(reduced) {
   return {
@@ -170,7 +166,10 @@ export default function MatchWizard() {
   const [powBreakdown, setPowBreakdown] = useState("");
 
   const [testDomain, setTestDomain] = useState("Engineering");
-  const [testSkill, setTestSkill] = useState(SKILL_DEFAULT_BY_DOMAIN.Engineering);
+  const [testSkill, setTestSkill] = useState(
+    getSubdomainSuggestions("Engineering")[0] || "Software"
+  );
+  const testSkillSuggestions = getSubdomainSuggestions(testDomain);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(15);
@@ -302,7 +301,8 @@ export default function MatchWizard() {
 
   const handleDomainChange = (value) => {
     setTestDomain(value);
-    setTestSkill(SKILL_DEFAULT_BY_DOMAIN[value] || "");
+    const suggestions = getSubdomainSuggestions(value);
+    setTestSkill(suggestions[0] || "");
   };
 
   const startPolling = (id) => {
@@ -859,15 +859,21 @@ export default function MatchWizard() {
 
                     <div className="form-group">
                       <label className="form-label" htmlFor="testSkill">
-                        Skill
+                        Sub-domain / Skill
                       </label>
+                      <datalist id="test-skill-suggestions">
+                        {testSkillSuggestions.map((suggestion) => (
+                          <option key={suggestion} value={suggestion} />
+                        ))}
+                      </datalist>
                       <input
                         id="testSkill"
                         className="form-input"
                         type="text"
                         value={testSkill}
                         onChange={(e) => setTestSkill(e.target.value)}
-                        placeholder="e.g. Python"
+                        placeholder={DOMAIN_SKILL_EXAMPLES[testDomain] ?? "e.g. Python"}
+                        list="test-skill-suggestions"
                         required
                       />
                     </div>

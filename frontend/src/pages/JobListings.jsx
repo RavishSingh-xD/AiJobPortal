@@ -13,17 +13,12 @@ import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
 import { LoadingPulse } from "../components/motionConfig";
 import { apiErrorMessage } from "../utils/errors";
+import { getSubdomainSuggestions, DOMAIN_SKILL_EXAMPLES } from "../utils/subdomainSuggestions";
 
 const DOMAINS = ["Engineering", "Business", "Healthcare"];
 const MAX_COMPARE = 4;
 const MAX_SKILL_TAGS = 5;
 const MAX_POLL_ATTEMPTS = 40;
-
-const DOMAIN_SKILL_EXAMPLES = {
-  Engineering: "e.g. Python, React, AWS",
-  Healthcare: "e.g. Cardiology, Nursing, ECG",
-  Business: "e.g. Marketing, Sales, Finance",
-};
 
 const stateVariants = {
   hidden: { opacity: 0, scale: 0.92 },
@@ -177,6 +172,7 @@ export default function JobListings() {
   const pollCountRef = useRef(0);
   const pollTimerRef = useRef(null);
   const pollParamsRef = useRef(null);
+  const skillSuggestions = getSubdomainSuggestions(domain);
 
   const stopPolling = () => {
     if (pollTimerRef.current) {
@@ -460,13 +456,19 @@ export default function JobListings() {
 
             <div className="form-group" style={{ flex: "1 1 200px", marginBottom: 0 }}>
               <label className="form-label" htmlFor="skill">
-                Skill (optional)
+                Sub-domain / Skill (optional)
               </label>
+              <datalist id="skill-suggestions">
+                {skillSuggestions.map((suggestion) => (
+                  <option key={suggestion} value={suggestion} />
+                ))}
+              </datalist>
               <input
                 id="skill"
                 type="text"
                 className="form-input filter-input"
                 placeholder={DOMAIN_SKILL_EXAMPLES[domain] ?? "e.g. skill or keyword"}
+                list="skill-suggestions"
                 value={skill}
                 onChange={(e) => setSkill(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}

@@ -37,6 +37,7 @@ LISTING_FIELDS = (
     "is_fallback",
     "employment_type",
     "required_skills",
+    "harvest_skill",
     "source",
 )
 
@@ -98,6 +99,24 @@ def skill_matches(required_skills, skill_query: str) -> bool:
     return False
 
 
+def job_matches_skill(item: dict, skill_query: str) -> bool:
+    """Match harvested sub-domain/skill against tags, stored harvest_skill, or title."""
+    if not skill_query:
+        return True
+    needle = skill_query.strip().lower()
+    if not needle:
+        return True
+    if skill_matches(item.get("required_skills"), skill_query):
+        return True
+    harvest_skill = str(item.get("harvest_skill") or "").strip().lower()
+    if harvest_skill and needle in harvest_skill:
+        return True
+    title = str(item.get("title") or "").strip().lower()
+    if title and needle in title:
+        return True
+    return False
+
+
 def skill_overlap(required_skills, skill: str, domain: str) -> float:
     tags = normalize_required_skills(required_skills)
     if not tags:
@@ -154,7 +173,7 @@ def qualifies_for_match(item: dict, skill: str, pow_score: float) -> bool:
         return False
     if employment_type_key(item.get("employment_type")) is None:
         return False
-    if not skill_matches(item.get("required_skills"), skill):
+    if not job_matches_skill(item, skill):
         return False
     min_pow = as_number(item.get("min_pow_score"), default=0)
     return min_pow <= pow_score
@@ -173,7 +192,7 @@ def build_almost_there_entry(item: dict, skill: str, domain: str, pow_score: flo
     required = item.get("required_skills")
     min_pow = as_number(item.get("min_pow_score"), default=0)
     overlap = skill_overlap(required, skill, domain)
-    skill_match = skill_matches(required, skill)
+    skill_match = job_matches_skill(item, skill)
     upgrade_steps = []
 
     if skill_match and min_pow > pow_score:

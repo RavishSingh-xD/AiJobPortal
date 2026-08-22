@@ -127,6 +127,7 @@ JOB_FIELDS = (
     "source",
     "apply_url",
     "required_skills",
+    "harvest_skill",
     "employment_type",
     "status",
     "display_status",
@@ -211,19 +212,27 @@ def _decode_next_token(token: str):
     return decoded
 
 
-def _skill_matches(required_skills, skill_query: str) -> bool:
+def _skill_matches(item: dict, skill_query: str) -> bool:
     if not skill_query:
         return True
-    if not required_skills:
-        return False
     needle = skill_query.strip().lower()
     if not needle:
         return True
-    for skill in required_skills:
-        if skill is None:
-            continue
-        if needle in str(skill).lower():
-            return True
+    required_skills = item.get("required_skills")
+    if required_skills:
+        for skill in required_skills:
+            if skill is None:
+                continue
+            if needle in str(skill).lower():
+                return True
+    harvest_skill = str(item.get("harvest_skill") or "").strip().lower()
+    if harvest_skill and needle in harvest_skill:
+        return True
+    title = str(item.get("title") or "").strip().lower()
+    if title and needle in title:
+        return True
+    if not required_skills and not harvest_skill:
+        return False
     return False
 
 
@@ -449,7 +458,7 @@ def lambda_handler(event, context):
             continue
         if not _is_open_listing(item):
             continue
-        if skill and not _skill_matches(item.get("required_skills"), skill):
+        if skill and not _skill_matches(item, skill):
             continue
         if employment_type_query and not _employment_type_matches(
             item.get("employment_type"), employment_type_query

@@ -164,22 +164,30 @@ def _is_open_listing(item: dict) -> bool:
     return str(status).strip().lower() not in CLOSED_STATUSES
 
 
-def _skill_matches(required_skills, skill_query: str) -> bool:
+def _skill_matches(item: dict, skill_query: str) -> bool:
     """Mirror list_jobs / get_matched_jobs (case-insensitive substring)."""
     if not skill_query:
         return True
-    if isinstance(required_skills, str):
-        required_skills = [required_skills]
-    if not required_skills:
-        return False
     needle = skill_query.strip().lower()
     if not needle:
         return True
-    for skill in required_skills:
-        if skill is None:
-            continue
-        if needle in str(skill).lower():
-            return True
+    required_skills = item.get("required_skills")
+    if isinstance(required_skills, str):
+        required_skills = [required_skills]
+    if required_skills:
+        for skill in required_skills:
+            if skill is None:
+                continue
+            if needle in str(skill).lower():
+                return True
+    harvest_skill = str(item.get("harvest_skill") or "").strip().lower()
+    if harvest_skill and needle in harvest_skill:
+        return True
+    title = str(item.get("title") or "").strip().lower()
+    if title and needle in title:
+        return True
+    if not required_skills and not harvest_skill:
+        return False
     return False
 
 
@@ -229,7 +237,7 @@ def _collect_matched_listings(domain: str, skill: str, pow_score: float):
             continue
         if not _is_open_listing(item):
             continue
-        if not _skill_matches(item.get("required_skills"), skill):
+        if not _skill_matches(item, skill):
             continue
         min_pow = _as_number(item.get("min_pow_score"), default=0)
         if min_pow > pow_score:
@@ -247,7 +255,7 @@ def _skill_overlap(required_skills, skill: str, domain: str) -> float:
         return 0.0
     hits = 0
     for tag in tags:
-        if _skill_matches([tag], skill) or _skill_matches([tag], domain):
+        if _skill_matches({"required_skills": [tag]}, skill) or _skill_matches({"required_skills": [tag]}, domain):
             hits += 1
             continue
         # Also credit when the tag is a substring of the session skill/domain.
