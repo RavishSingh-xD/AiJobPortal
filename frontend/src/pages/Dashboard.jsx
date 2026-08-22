@@ -365,8 +365,8 @@ export default function Dashboard() {
                 Browse roles yourself
               </h2>
               <p className="dashboard-coming-soon__text">
-                Search opportunities across Engineering, Design,
-                Healthcare, and Business.
+                Search opportunities across Engineering, Healthcare,
+                and Business.
               </p>
               <div className="dashboard-cta-grid__action">
                 <AnimatedButton secondary onClick={() => navigate("/jobs")}>

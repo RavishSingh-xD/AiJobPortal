@@ -118,10 +118,6 @@ def test_missing_table_triggers_harvest_returns_202(mock_dynamodb):
     mock_dynamodb.Table.return_value = mock_table
 
     with patch.object(list_jobs, "_trigger_harvest", return_value=True) as mock_trigger:
-        event = make_event({"domain": "Design"})
-        # Design isn't in DOMAIN_TABLE_MAP by default in this test file's
-        # scope -- use Engineering instead, which is mapped, to isolate
-        # just the "missing table" behavior.
         event = make_event({"domain": "Engineering"})
         result = list_jobs.lambda_handler(event, None)
 

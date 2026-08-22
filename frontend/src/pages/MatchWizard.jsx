@@ -22,12 +22,11 @@ const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 40;
 const MAX_SKILL_TAGS = 5;
 
-const TEST_DOMAINS = ["Engineering", "Business", "Healthcare", "Design"];
+const TEST_DOMAINS = ["Engineering", "Business", "Healthcare"];
 const SKILL_DEFAULT_BY_DOMAIN = {
   Engineering: "Software",
   Business: "Management",
   Healthcare: "Medicine",
-  Design: "UI/UX",
 };
 
 function wizardStepMotion(reduced) {

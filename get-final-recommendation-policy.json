@@ -17,8 +17,7 @@
       "Resource": [
         "arn:aws:dynamodb:ap-south-1:470361396576:table/jobs_engineering",
         "arn:aws:dynamodb:ap-south-1:470361396576:table/jobs_business",
-        "arn:aws:dynamodb:ap-south-1:470361396576:table/jobs_healthcare",
-        "arn:aws:dynamodb:ap-south-1:470361396576:table/jobs_design"
+        "arn:aws:dynamodb:ap-south-1:470361396576:table/jobs_healthcare"
       ]
     },
     {

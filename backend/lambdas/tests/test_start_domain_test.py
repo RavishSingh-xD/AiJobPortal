@@ -85,7 +85,7 @@ def test_invalid_domain_returns_400():
     assert result["statusCode"] == 400
     error = json.loads(result["body"])["error"]
     assert "Engineering" in error
-    assert "Design" in error
+    assert "Healthcare" in error
 
 
 @patch.object(sdt, "_sessions_table")
