@@ -2,19 +2,20 @@
 
 .page--home {
   display: block;
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right))
-    max(4rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  flex: 1;
+  padding: var(--page-pad-y) var(--page-pad-x) var(--page-pad-bottom) var(--page-pad-left);
 }
 
 .home-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0 0 1rem;
-  margin-bottom: 3rem;
+  gap: 0.75rem;
+  padding: 0 0 0.65rem;
+  margin-bottom: 1rem;
   border-bottom: 1px solid var(--border-hairline);
   position: sticky;
   top: 0;
@@ -141,11 +142,11 @@
 }
 
 .home-lede {
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: 0.9375rem;
+  line-height: 1.6;
   color: var(--text-secondary);
-  max-width: 34rem;
-  margin: 0 0 1.5rem;
+  max-width: none;
+  margin: 0 0 0.85rem;
 }
 
 .home-lede--center {
@@ -160,11 +161,11 @@
 
 .home-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  gap: 3rem 4rem;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 1.25rem 2rem;
   align-items: end;
-  margin-bottom: 4rem;
-  padding-bottom: 4rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
   border-bottom: 1px solid var(--border-hairline);
 }
 
@@ -241,8 +242,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem 0.75rem;
-  padding: 0.75rem 0;
-  margin-bottom: 3rem;
+  padding: 0.5rem 0;
+  margin-bottom: 1.25rem;
   border-top: 1px solid var(--border-hairline);
   border-bottom: 1px solid var(--border-hairline);
   font-family: var(--font-mono);
@@ -262,13 +263,13 @@
 }
 
 .home-section {
-  margin-bottom: 4rem;
+  margin-bottom: 1.5rem;
 }
 
 .home-problem {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 3rem;
+  gap: 1rem;
   align-items: start;
 }
 
@@ -336,11 +337,11 @@
 
 .home-better {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.03em;
   text-align: center;
-  margin: 0 0 4rem;
+  margin: 0 0 1.5rem;
   color: var(--text-primary);
 }
 
@@ -513,14 +514,14 @@
   border: 1px solid var(--border-hairline);
   border-radius: var(--radius-sm);
   background: var(--bg-surface);
-  padding: 3rem 1.5rem;
+  padding: 1.5rem 1rem;
   text-align: center;
 }
 
 .home-profile {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
-  gap: 3rem;
+  gap: 1rem;
   align-items: start;
 }
 
