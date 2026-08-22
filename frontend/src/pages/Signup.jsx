@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser, PendingVerificationError } from "../services/authService";
 import AuthMarketingPanel from "../components/AuthMarketingPanel";
+import { MotionSubmit } from "../components/AnimatedButton";
+import { motion } from "framer-motion";
+import { fadeUp, staggerContainer } from "../components/motionConfig";
 
 function MailIcon() {
   return (
@@ -77,10 +80,17 @@ export default function Signup() {
       <div className="auth-split">
         <AuthMarketingPanel />
 
-        <div className="auth-form-column">
-          <Link to="/" className="auth-back">← Back to Avyukt</Link>
+        <motion.div
+          className="auth-form-column"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div variants={fadeUp}>
+            <Link to="/" className="auth-back">← Back to Avyukt</Link>
+          </motion.div>
 
-          <div className="auth-form-card">
+          <motion.div className="auth-form-card" variants={fadeUp}>
             <h1 className="auth-form-card__title">Create your account</h1>
             <p className="auth-form-card__subtitle">
               Join Avyukt and start finding internships matched to you
@@ -152,16 +162,16 @@ export default function Signup() {
                 </div>
               </div>
 
-              <button type="submit" className="auth-submit" disabled={loading}>
+              <MotionSubmit disabled={loading}>
                 {loading ? "Creating account…" : "Sign up"}
-              </button>
+              </MotionSubmit>
             </form>
 
             <p className="auth-footer">
               Already have an account? <Link to="/login">Log in</Link>
             </p>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );

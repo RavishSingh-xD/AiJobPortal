@@ -17,6 +17,7 @@ import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
 import PageHeader from "../components/PageHeader";
 import { EASE_OUT, DURATION, LoadingPulse, MotionListItem } from "../components/motionConfig";
+import Surface from "../components/Surface";
 import SkillGapReport from "../components/SkillGapReport";
 import AlmostThereSection from "../components/AlmostThereSection";
 import { apiErrorMessage } from "../utils/errors";
@@ -45,7 +46,11 @@ function isValidResumeFile(file) {
 
 function FileDropZone({ id, label, file, onChange, disabled }) {
   return (
-    <div className={`drop-zone ${file ? "drop-zone--has-file" : ""}`}>
+    <motion.div
+      className={`drop-zone ${file ? "drop-zone--has-file" : ""}`}
+      whileHover={disabled ? undefined : { y: -1 }}
+      transition={{ duration: 0.16, ease: EASE_OUT }}
+    >
       <input
         id={id}
         className="drop-zone__input"
@@ -62,7 +67,7 @@ function FileDropZone({ id, label, file, onChange, disabled }) {
       ) : (
         <span className="drop-zone__label">{label}</span>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -661,7 +666,7 @@ export default function MatchWizard() {
           title="AI matching"
           subtitle="Resume scoring, domain test, and ranked recommendations."
         />
-        <div className="app-panel match-wizard-panel">
+        <Surface hover={false} className="app-panel match-wizard-panel">
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div key="profile" {...stepMotion}>
@@ -1255,7 +1260,7 @@ export default function MatchWizard() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </Surface>
       </div>
     </div>
   );

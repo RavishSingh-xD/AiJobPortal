@@ -9,7 +9,7 @@ export default function PageTransition({ children }) {
   const reduced = useReducedMotion();
 
   const pageVariants = {
-    initial: reduced ? { opacity: 0 } : { opacity: 0, y: 8 },
+    initial: reduced ? { opacity: 0 } : { opacity: 0, y: 10 },
     animate: {
       opacity: 1,
       y: 0,
@@ -17,8 +17,8 @@ export default function PageTransition({ children }) {
     },
     exit: {
       opacity: 0,
-      y: reduced ? 0 : -6,
-      transition: { duration: 0.2, ease: EASE_OUT },
+      y: reduced ? 0 : -8,
+      transition: { duration: 0.18, ease: EASE_OUT },
     },
   };
 

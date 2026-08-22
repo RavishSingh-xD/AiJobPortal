@@ -1,3 +1,6 @@
+import { motion } from "framer-motion";
+import { fadeUp, staggerContainer } from "./motionConfig";
+
 const FEATURES = [
   "Roles ranked to your resume and domain test",
   "Apply with a profile that already knows who you are",
@@ -6,16 +9,26 @@ const FEATURES = [
 
 export default function AuthMarketingPanel() {
   return (
-    <aside className="auth-promo" aria-label="About Avyukt">
+    <motion.aside
+      className="auth-promo"
+      aria-label="About Avyukt"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
       <div className="auth-promo__inner">
-        <span className="auth-promo__badge">Avyukt</span>
-        <h2 className="auth-promo__title">Your internship, matched.</h2>
-        <p className="auth-promo__lede">
+        <motion.span className="auth-promo__badge" variants={fadeUp}>
+          Avyukt
+        </motion.span>
+        <motion.h2 className="auth-promo__title" variants={fadeUp}>
+          Your internship, matched.
+        </motion.h2>
+        <motion.p className="auth-promo__lede" variants={fadeUp}>
           Build a profile once, verify your identity, and explore roles ranked to
           your skills — not a generic job board.
-        </p>
+        </motion.p>
 
-        <ul className="auth-promo__features">
+        <motion.ul className="auth-promo__features" variants={fadeUp}>
           {FEATURES.map((text, i) => (
             <li key={text}>
               <span className="auth-promo__feature-index">
@@ -24,9 +37,9 @@ export default function AuthMarketingPanel() {
               <span>{text}</span>
             </li>
           ))}
-        </ul>
+        </motion.ul>
 
-        <div className="auth-promo__profile">
+        <motion.div className="auth-promo__profile" variants={fadeUp}>
           <div className="auth-promo__profile-main">
             <span className="auth-promo__avatar">You</span>
             <div>
@@ -35,12 +48,12 @@ export default function AuthMarketingPanel() {
             </div>
           </div>
           <span className="auth-promo__match-badge">Ranked</span>
-        </div>
+        </motion.div>
 
-        <p className="auth-promo__footnote">
+        <motion.p className="auth-promo__footnote" variants={fadeUp}>
           Onboarding students across Engineering, Business, and Healthcare.
-        </p>
+        </motion.p>
       </div>
-    </aside>
+    </motion.aside>
   );
 }

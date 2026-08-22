@@ -1,5 +1,6 @@
 import AnimatedButton from "./AnimatedButton";
 import { MotionListItem } from "./motionConfig";
+import Surface from "./Surface";
 
 function AlmostThereCard({ job, index, onCompareToggle, compareSelected }) {
   return (
@@ -39,7 +40,7 @@ export default function AlmostThereSection({
   }
 
   return (
-    <section className="discovery-panel">
+    <Surface hover={false} flush className="discovery-panel">
       <div className="discovery-panel__header">
         <h2 className="discovery-panel__title">Almost there</h2>
         <p className="discovery-panel__summary">
@@ -74,6 +75,6 @@ export default function AlmostThereSection({
           ))}
         </div>
       )}
-    </section>
+    </Surface>
   );
 }

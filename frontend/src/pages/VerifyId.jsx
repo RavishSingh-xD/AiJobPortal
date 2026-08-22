@@ -1,22 +1,29 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserProfile } from "../services/authService";
 import { requestUploadUrl, uploadFileToS3 } from "../services/apiClient";
 import AnimatedButton from "../components/AnimatedButton";
+import AuthFormShell from "../components/AuthFormShell";
+import { EASE_OUT } from "../components/motionConfig";
 
 const successVariants = {
-  hidden: { opacity: 0, scale: 0.92 },
+  hidden: { opacity: 0, y: 8 },
   visible: {
     opacity: 1,
-    scale: 1,
-    transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
+    y: 0,
+    transition: { duration: 0.28, ease: EASE_OUT },
   },
+  exit: { opacity: 0, y: -6, transition: { duration: 0.18, ease: EASE_OUT } },
 };
 
 function FileDropZone({ id, label, file, onChange, disabled }) {
   return (
-    <div className={`drop-zone ${file ? "drop-zone--has-file" : ""}`}>
+    <motion.div
+      className={`drop-zone ${file ? "drop-zone--has-file" : ""}`}
+      whileHover={disabled ? undefined : { y: -1 }}
+      transition={{ duration: 0.16, ease: EASE_OUT }}
+    >
       <input
         id={id}
         className="drop-zone__input"
@@ -33,7 +40,7 @@ function FileDropZone({ id, label, file, onChange, disabled }) {
       ) : (
         <span className="drop-zone__label">{label}</span>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -132,18 +139,15 @@ export default function VerifyId() {
   };
 
   return (
-    <div className="page page--auth">
-      <div className="page-inner page-inner--wide auth-form-column">
-        <Link to="/dashboard" className="auth-back">Back</Link>
-
-        <div className="auth-form-card">
-          <AnimatePresence mode="wait">
+    <AuthFormShell backTo="/dashboard" backLabel="Back" wide>
+      <AnimatePresence mode="wait">
             {phase === "form" && (
               <motion.div
                 key="form"
-                initial={{ opacity: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.2 }}
+                variants={successVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
               >
                 <div className="glass-card__header">
                   <h1 className="auth-form-card__title">Verify identity</h1>
@@ -197,6 +201,7 @@ export default function VerifyId() {
                 variants={successVariants}
                 initial="hidden"
                 animate="visible"
+                exit="exit"
               >
                 <p className="micro-label">Processing</p>
                 <h2 className="empty-state__title">Verifying identity</h2>
@@ -215,6 +220,7 @@ export default function VerifyId() {
                 variants={successVariants}
                 initial="hidden"
                 animate="visible"
+                exit="exit"
               >
                 <p className="micro-label">Verified</p>
                 <h2 className="empty-state__title">Identity confirmed</h2>
@@ -235,6 +241,7 @@ export default function VerifyId() {
                 variants={successVariants}
                 initial="hidden"
                 animate="visible"
+                exit="exit"
               >
                 <p className="micro-label">Failed</p>
                 <h2 className="empty-state__title">Verification failed</h2>
@@ -263,6 +270,7 @@ export default function VerifyId() {
                 variants={successVariants}
                 initial="hidden"
                 animate="visible"
+                exit="exit"
               >
                 <p className="micro-label">Pending</p>
                 <h2 className="empty-state__title">Still processing</h2>
@@ -282,8 +290,6 @@ export default function VerifyId() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-      </div>
-    </div>
+    </AuthFormShell>
   );
 }

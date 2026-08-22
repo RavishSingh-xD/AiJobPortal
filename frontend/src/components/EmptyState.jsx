@@ -1,4 +1,5 @@
-import { LoadingPulse } from "./motionConfig";
+import { motion } from "framer-motion";
+import { LoadingPulse, EASE_OUT } from "./motionConfig";
 
 export default function EmptyState({
   variant = "empty",
@@ -17,7 +18,12 @@ export default function EmptyState({
           : "Empty";
 
   return (
-    <div className={`empty-state empty-state--${variant}`}>
+    <motion.div
+      className={`empty-state empty-state--${variant}`}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: EASE_OUT }}
+    >
       {loading ? (
         <LoadingPulse>
           <span className="empty-state__marker" aria-hidden="true" />
@@ -29,6 +35,6 @@ export default function EmptyState({
       <h2 className="empty-state__title">{title}</h2>
       {text && <p className="empty-state__text">{text}</p>}
       {action}
-    </div>
+    </motion.div>
   );
 }

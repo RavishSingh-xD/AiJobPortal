@@ -13,6 +13,7 @@ import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
+import Surface from "../components/Surface";
 import { MotionListItem } from "../components/motionConfig";
 import { apiErrorMessage } from "../utils/errors";
 import { getSubdomainSuggestions, DOMAIN_SKILL_EXAMPLES } from "../utils/subdomainSuggestions";
@@ -416,7 +417,7 @@ export default function JobListings() {
           subtitle="Browse opportunities by domain, role type, and skill."
         />
 
-        <div className="app-panel">
+        <Surface hover={false} className="app-panel">
           <div className="listings-filters">
             <div className="form-group" style={{ flex: "1 1 160px", marginBottom: 0 }}>
               <label className="form-label" htmlFor="domain">
@@ -507,7 +508,7 @@ export default function JobListings() {
               </AnimatedButton>
             </div>
           )}
-        </div>
+        </Surface>
 
         <AnimatePresence mode="wait">
             {uiState === "loading" && (

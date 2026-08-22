@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { compareJobs } from "../services/apiClient";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
+import Surface from "../components/Surface";
+import { EASE_OUT } from "../components/motionConfig";
 import { apiErrorMessage } from "../utils/errors";
 
 const MAX_COMPARE = 4;
@@ -19,8 +22,18 @@ function PowBar({ powBar }) {
   return (
     <div className="compare-pow">
       <div className="compare-pow__bar">
-        <div className="compare-pow__fill" style={{ width: `${yourWidth}%` }} />
-        <div className="compare-pow__marker" style={{ left: `${reqWidth}%` }} />
+        <motion.div
+          className="compare-pow__fill"
+          initial={{ width: 0 }}
+          animate={{ width: `${yourWidth}%` }}
+          transition={{ duration: 0.55, ease: EASE_OUT }}
+        />
+        <motion.div
+          className="compare-pow__marker"
+          initial={{ left: 0, opacity: 0 }}
+          animate={{ left: `${reqWidth}%`, opacity: 1 }}
+          transition={{ duration: 0.55, ease: EASE_OUT }}
+        />
       </div>
       <p className="compare-pow__label tabular-nums">
         You {powBar.yourPowScore} / needs {powBar.requiredPowScore}
@@ -103,7 +116,7 @@ export default function CompareRoles() {
         )}
 
         {uiState === "ready" && (
-          <div className="app-panel app-panel--flush">
+          <Surface hover={false} flush className="app-panel app-panel--flush">
             <div className="compare-table-wrap">
               <table className="compare-table">
                 <thead>
@@ -138,7 +151,7 @@ export default function CompareRoles() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Surface>
         )}
 
         <div style={{ marginTop: "1.25rem" }}>

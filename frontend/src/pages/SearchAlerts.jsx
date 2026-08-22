@@ -10,6 +10,8 @@ import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
+import Surface from "../components/Surface";
+import { MotionListItem } from "../components/motionConfig";
 import { apiErrorMessage } from "../utils/errors";
 
 export default function SearchAlerts() {
@@ -78,8 +80,14 @@ export default function SearchAlerts() {
           />
         )}
 
-        {alerts.map((alert) => (
-          <section key={alert.searchId} className="discovery-panel">
+        {alerts.map((alert, alertIndex) => (
+          <Surface
+            key={alert.searchId}
+            hover={false}
+            flush
+            delay={alertIndex * 0.04}
+            className="discovery-panel"
+          >
             <div className="discovery-panel__header">
               <h2 className="discovery-panel__title">
                 {alert.label || `${alert.domain} search`}
@@ -87,10 +95,10 @@ export default function SearchAlerts() {
               </h2>
             </div>
             <ul className="alert-list">
-              {(alert.newMatches || []).map((job) => (
-                <li key={job.canonical_id} className="alert-list__item">
+              {(alert.newMatches || []).map((job, index) => (
+                <MotionListItem key={job.canonical_id} as="li" index={index} className="alert-list__item">
                   <strong>{job.title}</strong> · {job.company}
-                </li>
+                </MotionListItem>
               ))}
             </ul>
             <div style={{ padding: "0.75rem 1rem" }}>
@@ -107,17 +115,22 @@ export default function SearchAlerts() {
                 Mark as seen
               </AnimatedButton>
             </div>
-          </section>
+          </Surface>
         ))}
 
         {!loading && searches.length > 0 && (
-          <section className="discovery-panel">
+          <Surface hover={false} flush delay={0.08} className="discovery-panel">
             <div className="discovery-panel__header">
               <h2 className="discovery-panel__title">Saved searches</h2>
             </div>
             <ul className="alert-list">
-              {searches.map((search) => (
-                <li key={search.searchId} className="alert-list__item alert-list__item--row">
+              {searches.map((search, index) => (
+                <MotionListItem
+                  key={search.searchId}
+                  as="li"
+                  index={index}
+                  className="alert-list__item alert-list__item--row"
+                >
                   <span>
                     {search.label || search.domain}
                     {search.skill ? ` · ${search.skill}` : ""}
@@ -131,10 +144,10 @@ export default function SearchAlerts() {
                   >
                     Remove
                   </AnimatedButton>
-                </li>
+                </MotionListItem>
               ))}
             </ul>
-          </section>
+          </Surface>
         )}
 
         <div style={{ marginTop: "1.25rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>

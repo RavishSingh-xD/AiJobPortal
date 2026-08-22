@@ -1,4 +1,7 @@
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import Reveal, { RevealItem } from "../components/Reveal";
+import { staggerContainer, fadeUp } from "../components/motionConfig";
 
 const STEPS = [
   {
@@ -71,7 +74,12 @@ const MATCHES = [
 
 function HomeNav({ onLogin, onStart, onHow, onWhy }) {
   return (
-    <header className="home-nav">
+    <motion.header
+      className="home-nav"
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+    >
       <div className="home-nav__brand">
         <img src="/avyukt-logo.png" alt="" />
         Avyukt
@@ -92,7 +100,7 @@ function HomeNav({ onLogin, onStart, onHow, onWhy }) {
           Get started
         </button>
       </div>
-    </header>
+    </motion.header>
   );
 }
 
@@ -109,14 +117,19 @@ export default function Home() {
     <div className="page page--home">
       <HomeNav onLogin={goLogin} onStart={goStart} onHow={goHow} onWhy={goWhy} />
 
-      <section className="home-hero">
-        <div className="home-hero__visual">
+      <motion.section
+        className="home-hero"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div className="home-hero__visual" variants={fadeUp}>
           <div className="home-hero__mark">
             <img src="/avyukt-logo.png" alt="" />
           </div>
           <span className="home-hero__index">Avyukt / 2026</span>
-        </div>
-        <div className="home-hero__copy">
+        </motion.div>
+        <motion.div className="home-hero__copy" variants={fadeUp}>
           <p className="home-kicker">Opportunity matching</p>
           <h1 className="home-hero__title">
             Find work that <span>fits you.</span>
@@ -138,10 +151,10 @@ export default function Home() {
             <span><strong>Verified</strong> students</span>
             <span><strong>3</strong> domains</span>
           </div>
-        </div>
-      </section>
+        </motion.div>
+      </motion.section>
 
-      <div className="home-flow" aria-hidden="true">
+      <Reveal className="home-flow" aria-hidden="true">
         <span>Profile</span>
         <i>/</i>
         <span>Skills</span>
@@ -151,9 +164,9 @@ export default function Home() {
         <span className="home-flow__accent">Rank</span>
         <i>/</i>
         <span>Apply</span>
-      </div>
+      </Reveal>
 
-      <section className="home-section home-problem">
+      <Reveal className="home-section home-problem">
         <div className="home-problem__copy">
           <p className="home-kicker home-kicker--accent">The problem</p>
           <h2 className="home-h2">Stop applying randomly.</h2>
@@ -192,11 +205,11 @@ export default function Home() {
             </div>
           </article>
         </div>
-      </section>
+      </Reveal>
 
-      <p className="home-better">There&apos;s a better way.</p>
+      <Reveal as="p" className="home-better">There&apos;s a better way.</Reveal>
 
-      <section className="home-section" id="how-it-works">
+      <Reveal className="home-section" id="how-it-works" stagger>
         <p className="home-kicker">Process</p>
         <h2 className="home-h2">From profile to opportunity.</h2>
         <p className="home-lede">
@@ -204,18 +217,18 @@ export default function Home() {
         </p>
         <div className="home-steps">
           {STEPS.map((step) => (
-            <article key={step.n} className="home-step">
+            <RevealItem key={step.n} className="home-step">
               <span className="home-step__n">{step.n}</span>
               <div>
                 <h3>{step.title}</h3>
                 <p>{step.text}</p>
               </div>
-            </article>
+            </RevealItem>
           ))}
         </div>
-      </section>
+      </Reveal>
 
-      <section className="home-section">
+      <Reveal className="home-section">
         <p className="home-kicker">Matching</p>
         <h2 className="home-h2">
           Not just jobs.
@@ -251,9 +264,9 @@ export default function Home() {
             </article>
           ))}
         </div>
-      </section>
+      </Reveal>
 
-      <section className="home-section" id="why-avyukt">
+      <Reveal className="home-section" id="why-avyukt">
         <p className="home-kicker home-kicker--accent">Why Avyukt</p>
         <div className="home-why">
           <div>
@@ -269,9 +282,9 @@ export default function Home() {
             <p>Trust matters when opportunities are involved.</p>
           </div>
         </div>
-      </section>
+      </Reveal>
 
-      <section className="home-section home-cta-panel">
+      <Reveal className="home-section home-cta-panel">
         <h2 className="home-h2 home-h2--center">
           Your next opportunity
           <br />
@@ -281,9 +294,9 @@ export default function Home() {
         <button type="button" className="home-btn home-btn--primary" onClick={goStart}>
           Create profile
         </button>
-      </section>
+      </Reveal>
 
-      <section className="home-section home-profile">
+      <Reveal className="home-section home-profile">
         <div className="home-profile__copy">
           <p className="home-kicker">Your profile</p>
           <h2 className="home-h2">
@@ -335,7 +348,7 @@ export default function Home() {
           </div>
           <p className="home-id-card__meta">Resume and profile links on file</p>
         </article>
-      </section>
+      </Reveal>
     </div>
   );
 }

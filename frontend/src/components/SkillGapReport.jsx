@@ -1,3 +1,5 @@
+import Surface from "./Surface";
+
 export default function SkillGapReport({ report }) {
   if (!report) {
     return null;
@@ -6,7 +8,7 @@ export default function SkillGapReport({ report }) {
   const { strongSkills = [], weakSkills = [], missingSkills = [], summary } = report;
 
   return (
-    <section className="discovery-panel">
+    <Surface hover={false} flush className="discovery-panel">
       <div className="discovery-panel__header">
         <h2 className="discovery-panel__title">Skill gap report</h2>
         {summary && <p className="discovery-panel__summary">{summary}</p>}
@@ -73,6 +75,6 @@ export default function SkillGapReport({ report }) {
           </ul>
         </div>
       )}
-    </section>
+    </Surface>
   );
 }

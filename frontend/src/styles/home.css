@@ -91,6 +91,11 @@
   background: var(--accent);
   color: var(--accent-on-primary);
   border-color: var(--accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.home-btn--primary:active {
+  transform: translateY(1px);
 }
 
 .home-btn--primary:hover {

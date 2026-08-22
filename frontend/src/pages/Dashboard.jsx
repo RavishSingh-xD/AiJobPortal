@@ -8,10 +8,12 @@ import {
   getProfile,
   updateProfile,
 } from "../services/apiClient";
-import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
 import PageHeader from "../components/PageHeader";
+import CountUp from "../components/CountUp";
+import ProgressRail from "../components/ProgressRail";
+import Surface from "../components/Surface";
 import { EASE_OUT, DURATION } from "../components/motionConfig";
 import { apiErrorMessage } from "../utils/errors";
 
@@ -42,11 +44,12 @@ function StatCard({
   const reduced = useReducedMotion();
 
   return (
-    <GlassCard
+    <Surface
+      hover={false}
+      delay={delay}
       className={`glass-card--stat glass-card--clickable stat-card${
         expanded ? " stat-card--open" : ""
       }`}
-      delay={delay}
     >
       <button
         type="button"
@@ -57,7 +60,9 @@ function StatCard({
         <div className="stat-card__icon" aria-hidden="true" />
         <div className="stat-card__summary">
           <p className="stat-card__label">{label}</p>
-          <p className="stat-card__value">{value}</p>
+          <p className="stat-card__value">
+            {typeof value === "number" ? <CountUp value={value} /> : value}
+          </p>
         </div>
         <motion.span
           className="stat-card__chevron"
@@ -84,7 +89,7 @@ function StatCard({
           </motion.div>
         )}
       </AnimatePresence>
-    </GlassCard>
+    </Surface>
   );
 }
 
@@ -261,7 +266,7 @@ export default function Dashboard() {
               profileUiState === "loading"
                 ? "…"
                 : profileUiState === "ready"
-                  ? `${completionPct}%`
+                  ? <CountUp value={completionPct} suffix="%" />
                   : "—"
             }
             delay={0.3}
@@ -269,18 +274,11 @@ export default function Dashboard() {
             onToggle={() => toggleCard("profile")}
             extraCollapsed={
               profileUiState === "ready" ? (
-                <div
-                  className="profile-progress profile-progress--slim"
-                  role="progressbar"
-                  aria-valuenow={completionPct}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                >
-                  <div
-                    className="profile-progress__bar"
-                    style={{ width: `${completionPct}%` }}
-                  />
-                </div>
+                <ProgressRail
+                  slim
+                  value={completionPct}
+                  label="Profile completion"
+                />
               ) : null
             }
           >
@@ -289,18 +287,10 @@ export default function Dashboard() {
             )}
             {profileUiState === "ready" && (
               <>
-                <div
-                  className="profile-progress"
-                  role="progressbar"
-                  aria-valuenow={completionPct}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                >
-                  <div
-                    className="profile-progress__bar"
-                    style={{ width: `${completionPct}%` }}
-                  />
-                </div>
+                <ProgressRail
+                  value={completionPct}
+                  label="Profile completion"
+                />
                 <form className="profile-form" onSubmit={handleSaveProfile}>
                   <div className="form-group" style={{ marginBottom: "0.75rem" }}>
                     <label className="form-label" htmlFor="linkedinUrl">
@@ -356,7 +346,7 @@ export default function Dashboard() {
         </div>
 
         <div className="dashboard-cta-grid">
-          <div className="app-panel">
+          <Surface delay={0.06} className="app-panel" hover>
             <div className="dashboard-coming-soon">
               <p className="micro-label">Browse</p>
               <h2 className="dashboard-coming-soon__title">Find roles manually</h2>
@@ -369,9 +359,9 @@ export default function Dashboard() {
                 </AnimatedButton>
               </div>
             </div>
-          </div>
+          </Surface>
 
-          <div className="app-panel dashboard-cta-card--featured">
+          <Surface delay={0.1} className="app-panel dashboard-cta-card--featured" hover>
             <div className="dashboard-coming-soon">
               <p className="micro-label">Match</p>
               <h2 className="dashboard-coming-soon__title">AI-ranked recommendation</h2>
@@ -385,7 +375,7 @@ export default function Dashboard() {
                 </AnimatedButton>
               </div>
             </div>
-          </div>
+          </Surface>
         </div>
       </div>
     </div>

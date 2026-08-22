@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { motion, LayoutGroup } from "framer-motion";
 import { getUserProfile, logoutUser } from "../services/authService";
 import AnimatedButton from "./AnimatedButton";
+
+const LINKS = [
+  { to: "/dashboard", label: "Dashboard" },
+  { to: "/jobs", label: "Find Roles" },
+  { to: "/applications", label: "Applications" },
+  { to: "/search-alerts", label: "Alerts" },
+  { to: "/saved-jobs", label: "Saved" },
+];
 
 export default function NavBar() {
   const navigate = useNavigate();
@@ -44,48 +53,32 @@ export default function NavBar() {
         />
         Avyukt
       </div>
+      <LayoutGroup>
       <nav className="navbar__links" aria-label="Main">
-        <NavLink
-          to="/dashboard"
-          className={({ isActive }) =>
-            `navbar__link${isActive ? " navbar__link--active" : ""}`
-          }
-        >
-          Dashboard
-        </NavLink>
-        <NavLink
-          to="/jobs"
-          className={({ isActive }) =>
-            `navbar__link${isActive ? " navbar__link--active" : ""}`
-          }
-        >
-          Find Roles
-        </NavLink>
-        <NavLink
-          to="/applications"
-          className={({ isActive }) =>
-            `navbar__link${isActive ? " navbar__link--active" : ""}`
-          }
-        >
-          Applications
-        </NavLink>
-        <NavLink
-          to="/search-alerts"
-          className={({ isActive }) =>
-            `navbar__link${isActive ? " navbar__link--active" : ""}`
-          }
-        >
-          Alerts
-        </NavLink>
-        <NavLink
-          to="/saved-jobs"
-          className={({ isActive }) =>
-            `navbar__link${isActive ? " navbar__link--active" : ""}`
-          }
-        >
-          Saved
-        </NavLink>
+        {LINKS.map((link) => (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            className={({ isActive }) =>
+              `navbar__link${isActive ? " navbar__link--active" : ""}`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <motion.span
+                    className="navbar__indicator"
+                    layoutId="nav-indicator"
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  />
+                )}
+                <span className="navbar__link-text">{link.label}</span>
+              </>
+            )}
+          </NavLink>
+        ))}
       </nav>
+      </LayoutGroup>
       <div className="dashboard-topbar__actions">
         {name && <span className="dashboard-topbar__email">{name}</span>}
         <AnimatedButton

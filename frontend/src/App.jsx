@@ -29,13 +29,11 @@ function ProtectedRoute({ children }) {
       .finally(() => setChecking(false));
   }, []);
 
-  if (checking) {
+          if (checking) {
     return (
       <div className="page">
         <div className="page-inner">
-          <p style={{ textAlign: "center", color: "var(--text-secondary)" }}>
-            Loading…
-          </p>
+          <p className="micro-label" style={{ textAlign: "center" }}>Loading</p>
         </div>
       </div>
     );
@@ -62,13 +60,11 @@ function VerifiedRoute({ children }) {
       .finally(() => setChecking(false));
   }, []);
 
-  if (checking) {
+          if (checking) {
     return (
       <div className="page">
         <div className="page-inner">
-          <p style={{ textAlign: "center", color: "var(--text-secondary)" }}>
-            Loading…
-          </p>
+          <p className="micro-label" style={{ textAlign: "center" }}>Loading</p>
         </div>
       </div>
     );
