@@ -156,13 +156,17 @@ def _owned_session():
 LONG_TEXT = "Experienced software intern. " * 5  # well over 50 chars
 
 
+@patch.object(pru, "_users_table")
 @patch.object(pru, "_call_groq")
 @patch.object(pru, "_extract_resume_text", return_value=LONG_TEXT)
 @patch.object(pru, "_ssm")
 @patch.object(pru, "_sessions_table")
 @patch.object(pru, "_s3")
-def test_success_updates_awaiting_test(mock_s3, mock_table, mock_ssm, mock_extract, mock_groq):
+def test_success_updates_awaiting_test(
+    mock_s3, mock_table, mock_ssm, mock_extract, mock_groq, mock_users_table
+):
     mock_table.get_item.return_value = _owned_session()
+    mock_users_table.get_item.return_value = {}
     mock_s3.get_object.return_value = mock_s3_object(b"%PDF-1.4 fake")
     mock_groq.return_value = json.dumps({"powScore": 42, "breakdown": "Strong internships."})
 
@@ -181,13 +185,17 @@ def test_success_updates_awaiting_test(mock_s3, mock_table, mock_ssm, mock_extra
     assert LONG_TEXT in user_content
 
 
+@patch.object(pru, "_users_table")
 @patch.object(pru, "_call_groq")
 @patch.object(pru, "_extract_resume_text", return_value=LONG_TEXT)
 @patch.object(pru, "_ssm")
 @patch.object(pru, "_sessions_table")
 @patch.object(pru, "_s3")
-def test_groq_retries_once_on_invalid_json(mock_s3, mock_table, mock_ssm, mock_extract, mock_groq):
+def test_groq_retries_once_on_invalid_json(
+    mock_s3, mock_table, mock_ssm, mock_extract, mock_groq, mock_users_table
+):
     mock_table.get_item.return_value = _owned_session()
+    mock_users_table.get_item.return_value = {}
     mock_s3.get_object.return_value = mock_s3_object(b"%PDF-1.4 fake")
     mock_groq.side_effect = [
         "not json",
@@ -202,15 +210,17 @@ def test_groq_retries_once_on_invalid_json(mock_s3, mock_table, mock_ssm, mock_e
     assert "ONLY the JSON object" in retry_content
 
 
+@patch.object(pru, "_users_table")
 @patch.object(pru, "_call_groq", return_value="still not json")
 @patch.object(pru, "_extract_resume_text", return_value=LONG_TEXT)
 @patch.object(pru, "_ssm")
 @patch.object(pru, "_sessions_table")
 @patch.object(pru, "_s3")
 def test_groq_parse_failure_marks_ai_scoring_failed(
-    mock_s3, mock_table, mock_ssm, mock_extract, mock_groq
+    mock_s3, mock_table, mock_ssm, mock_extract, mock_groq, mock_users_table
 ):
     mock_table.get_item.return_value = _owned_session()
+    mock_users_table.get_item.return_value = {}
     mock_s3.get_object.return_value = mock_s3_object(b"%PDF-1.4 fake")
 
     result = pru.lambda_handler(make_s3_event(), None)
@@ -221,13 +231,17 @@ def test_groq_parse_failure_marks_ai_scoring_failed(
     assert mock_groq.call_count == 2
 
 
+@patch.object(pru, "_users_table")
 @patch.object(pru, "_call_groq")
 @patch.object(pru, "_extract_resume_text", return_value=LONG_TEXT)
 @patch.object(pru, "_ssm")
 @patch.object(pru, "_sessions_table")
 @patch.object(pru, "_s3")
-def test_pow_score_is_clamped(mock_s3, mock_table, mock_ssm, mock_extract, mock_groq):
+def test_pow_score_is_clamped(
+    mock_s3, mock_table, mock_ssm, mock_extract, mock_groq, mock_users_table
+):
     mock_table.get_item.return_value = _owned_session()
+    mock_users_table.get_item.return_value = {}
     mock_s3.get_object.return_value = mock_s3_object(b"%PDF-1.4 fake")
     mock_groq.return_value = json.dumps({"powScore": 99, "breakdown": "too high"})
 
@@ -254,11 +268,15 @@ def test_unexpected_error_after_ownership_check_marks_session_failed(
     assert values[":error"] == "Unexpected error during resume processing"
 
 
+@patch.object(pru, "_users_table")
 @patch.object(pru, "_ssm")
 @patch.object(pru, "_sessions_table")
 @patch.object(pru, "_s3")
-def test_magic_bytes_detect_pdf_when_content_type_ambiguous(mock_s3, mock_table, mock_ssm):
+def test_magic_bytes_detect_pdf_when_content_type_ambiguous(
+    mock_s3, mock_table, mock_ssm, mock_users_table
+):
     mock_table.get_item.return_value = _owned_session()
+    mock_users_table.get_item.return_value = {}
     mock_s3.get_object.return_value = mock_s3_object(
         b"%PDF-1.4 rest", content_type="application/octet-stream"
     )
@@ -289,3 +307,90 @@ def test_groq_api_key_is_cached(mock_ssm):
         Name="/aijobportal/groq-api-key", WithDecryption=True
     )
     pru._groq_api_key = None
+
+
+def test_normalize_linkedin_url_variants_match():
+    urls = [
+        "https://www.linkedin.com/in/jane/",
+        "https://linkedin.com/in/jane",
+        "HTTPS://LinkedIn.com/in/jane/",
+    ]
+    normalized = [pru._normalize_linkedin_url(u) for u in urls]
+    assert normalized[0] == normalized[1] == normalized[2]
+
+
+def test_compute_pow_fingerprint_same_inputs_same_hash():
+    resume = b"%PDF-1.4 same resume bytes"
+    fp1 = pru._compute_pow_fingerprint(
+        "https://www.linkedin.com/in/jane/", "Jane", "Jane-LC", resume
+    )
+    fp2 = pru._compute_pow_fingerprint(
+        "https://linkedin.com/in/jane", "jane", "jane-lc", resume
+    )
+    assert fp1 == fp2
+
+
+@patch.object(pru, "_users_table")
+@patch.object(pru, "_call_groq")
+@patch.object(pru, "_extract_resume_text", return_value=LONG_TEXT)
+@patch.object(pru, "_ssm")
+@patch.object(pru, "_sessions_table")
+@patch.object(pru, "_s3")
+def test_cached_pow_score_skips_groq(
+    mock_s3, mock_table, mock_ssm, mock_extract, mock_groq, mock_users_table
+):
+    resume_bytes = b"%PDF-1.4 fake cached resume"
+    fingerprint = pru._compute_pow_fingerprint(
+        "https://linkedin.com/in/jane", "jane", "jane-lc", resume_bytes
+    )
+    mock_table.get_item.return_value = _owned_session()
+    mock_users_table.get_item.return_value = {
+        "Item": {
+            "userId": USER_A,
+            "powScoreFingerprint": fingerprint,
+            "powScore": 37,
+            "powBreakdown": "Cached breakdown.",
+        }
+    }
+    mock_s3.get_object.return_value = mock_s3_object(resume_bytes)
+
+    result = pru.lambda_handler(make_s3_event(), None)
+
+    assert result["results"][0]["status"] == "awaiting_test"
+    assert result["results"][0]["powScore"] == 37
+    assert result["results"][0]["cached"] is True
+    mock_groq.assert_not_called()
+    mock_users_table.update_item.assert_not_called()
+    values = mock_table.update_item.call_args.kwargs["ExpressionAttributeValues"]
+    assert values[":score"] == 37
+    assert values[":breakdown"] == "Cached breakdown."
+    assert values[":fingerprint"] == fingerprint
+
+
+@patch.object(pru, "_users_table")
+@patch.object(pru, "_call_groq")
+@patch.object(pru, "_extract_resume_text", return_value=LONG_TEXT)
+@patch.object(pru, "_ssm")
+@patch.object(pru, "_sessions_table")
+@patch.object(pru, "_s3")
+def test_new_pow_score_is_stored_on_users_table(
+    mock_s3, mock_table, mock_ssm, mock_extract, mock_groq, mock_users_table
+):
+    resume_bytes = b"%PDF-1.4 new score resume"
+    mock_table.get_item.return_value = _owned_session()
+    mock_users_table.get_item.return_value = {}
+    mock_s3.get_object.return_value = mock_s3_object(resume_bytes)
+    mock_groq.return_value = json.dumps({"powScore": 25, "breakdown": "Fresh score."})
+
+    result = pru.lambda_handler(make_s3_event(), None)
+
+    assert result["results"][0]["cached"] is False
+    mock_groq.assert_called_once()
+    cache_kwargs = mock_users_table.update_item.call_args.kwargs
+    cache_values = cache_kwargs["ExpressionAttributeValues"]
+    assert cache_values[":score"] == 25
+    assert cache_values[":breakdown"] == "Fresh score."
+    expected_fp = pru._compute_pow_fingerprint(
+        "https://linkedin.com/in/jane", "jane", "jane-lc", resume_bytes
+    )
+    assert cache_values[":fingerprint"] == expected_fp
