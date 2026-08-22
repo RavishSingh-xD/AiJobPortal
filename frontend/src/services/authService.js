@@ -24,17 +24,100 @@ const amplifyConfig = {
 
 Amplify.configure(amplifyConfig);
 
+function isUsernameExistsError(err) {
+  const name = err?.name || err?.code || "";
+  const message = String(err?.message || "").toLowerCase();
+  return (
+    name === "UsernameExistsException" ||
+    name === "AliasExistsException" ||
+    message.includes("already exists") ||
+    message.includes("user already exists")
+  );
+}
+
+export class PendingVerificationError extends Error {
+  constructor(email, message) {
+    super(message);
+    this.name = "PendingVerificationError";
+    this.email = email;
+  }
+}
+
+async function clearUnconfirmedSignup(email) {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (!apiUrl) {
+    return { action: "skipped" };
+  }
+
+  try {
+    const res = await fetch(`${apiUrl}/auth/retry-signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    if (res.status === 404) {
+      return { action: "skipped" };
+    }
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { action: "skipped" };
+    }
+    return data;
+  } catch {
+    return { action: "skipped" };
+  }
+}
+
+async function redirectPendingVerification(email) {
+  try {
+    await resendSignUpCode({ username: email });
+  } catch {
+    // Still route to verify — user can tap Resend on that page
+  }
+  throw new PendingVerificationError(
+    email,
+    "This email has a pending signup. Enter the verification code we emailed you (check spam too)."
+  );
+}
+
 export async function registerUser(email, password, name) {
-  return signUp({
-    username: email,
-    password,
-    options: {
-      userAttributes: {
-        email,
-        name,
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const attemptSignUp = () =>
+    signUp({
+      username: normalizedEmail,
+      password,
+      options: {
+        userAttributes: {
+          email: normalizedEmail,
+          name,
+        },
       },
-    },
-  });
+    });
+
+  try {
+    return await attemptSignUp();
+  } catch (err) {
+    if (!isUsernameExistsError(err)) {
+      throw err;
+    }
+
+    const recovery = await clearUnconfirmedSignup(normalizedEmail);
+
+    if (recovery.action === "deleted" || recovery.action === "not_found") {
+      return await attemptSignUp();
+    }
+
+    if (recovery.action === "confirmed") {
+      throw new Error(
+        "An account with this email already exists. Log in instead."
+      );
+    }
+
+    return redirectPendingVerification(normalizedEmail);
+  }
 }
 
 export async function verifyOtp(email, code) {

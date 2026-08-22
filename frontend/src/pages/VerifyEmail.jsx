@@ -9,6 +9,8 @@ export default function VerifyEmail() {
   const location = useLocation();
   const presetEmail =
     typeof location.state?.email === "string" ? location.state.email : "";
+  const presetMessage =
+    typeof location.state?.message === "string" ? location.state.message : "";
 
   const [email, setEmail] = useState(presetEmail);
   const [code, setCode] = useState("");
@@ -16,9 +18,10 @@ export default function VerifyEmail() {
   const [resending, setResending] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState(
-    presetEmail
-      ? "Enter the code we sent to your email. If you don't see it, check your spam or junk folder."
-      : ""
+    presetMessage ||
+      (presetEmail
+        ? "Enter the code we sent to your email. If you don't see it, check your spam or junk folder."
+        : "")
   );
 
   const handleVerify = async (e) => {

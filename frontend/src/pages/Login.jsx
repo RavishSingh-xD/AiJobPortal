@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { loginUser, getUserProfile } from "../services/authService";
+import { loginUser, getUserProfile, PendingVerificationError } from "../services/authService";
 import AuthMarketingPanel from "../components/AuthMarketingPanel";
 import { getPostLoginPath } from "../utils/verification";
 
@@ -45,6 +45,26 @@ export default function Login() {
       const profile = await getUserProfile();
       navigate(getPostLoginPath(profile));
     } catch (err) {
+      if (err instanceof PendingVerificationError) {
+        navigate("/verify-email", {
+          state: {
+            email: err.email || email,
+            message: err.message,
+          },
+        });
+        return;
+      }
+      const errName = err?.name || err?.code || "";
+      if (errName === "UserNotConfirmedException") {
+        navigate("/verify-email", {
+          state: {
+            email,
+            message:
+              "Your email isn't verified yet. Enter the code we sent you (check spam too).",
+          },
+        });
+        return;
+      }
       setError(err.message || "Login failed. Please check your credentials.");
     } finally {
       setLoading(false);

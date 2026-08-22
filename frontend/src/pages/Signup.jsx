@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { registerUser } from "../services/authService";
+import { registerUser, PendingVerificationError } from "../services/authService";
 import AuthMarketingPanel from "../components/AuthMarketingPanel";
 
 function MailIcon() {
@@ -57,6 +57,15 @@ export default function Signup() {
         navigate("/verify-email", { state: { email } });
       }
     } catch (err) {
+      if (err instanceof PendingVerificationError) {
+        navigate("/verify-email", {
+          state: {
+            email: err.email || email,
+            message: err.message,
+          },
+        });
+        return;
+      }
       setError(err.message || "Sign up failed. Please try again.");
     } finally {
       setLoading(false);
