@@ -35,36 +35,36 @@ const STEPS = [
 
 const MATCHES = [
   {
-    pct: "94% Match",
+    fitLabel: "Strong fit",
     domain: "Engineering",
     title: "Software Engineering Intern",
     skills: ["React", "Python", "AWS", "DSA"],
     reasons: [
-      "Strong frontend experience",
-      "Relevant technical skills",
-      "Matching career interests",
+      "Frontend and backend skills on your profile",
+      "Relevant technical stack",
+      "Aligned with engineering roles",
     ],
   },
   {
-    pct: "87% Match",
+    fitLabel: "Good fit",
     domain: "Engineering",
     title: "AI/ML Intern",
     skills: ["Python", "Machine Learning", "Data Analysis"],
     reasons: [
-      "Python depth on your profile",
+      "Python experience highlighted",
       "Project work in ML",
-      "Aligned with your goals",
+      "Matches your stated interests",
     ],
   },
   {
-    pct: "91% Match",
+    fitLabel: "Strong fit",
     domain: "Business",
     title: "Data Analyst Intern",
     skills: ["SQL", "Tableau", "Statistics", "Python"],
     reasons: [
-      "Analytics skill overlap",
-      "Clear domain fit",
-      "Ready to apply now",
+      "Analytics skills overlap",
+      "Clear business domain fit",
+      "Ready to review and apply",
     ],
   },
 ];
@@ -146,8 +146,8 @@ export default function Home() {
             </button>
           </div>
           <div className="home-hero__badges">
-            <span className="home-chip">94% Match</span>
-            <span className="home-chip">AI Ranked</span>
+            <span className="home-chip">Skill-ranked</span>
+            <span className="home-chip">Verified students</span>
           </div>
         </div>
       </section>
@@ -159,7 +159,7 @@ export default function Home() {
         <i>→</i>
         <span>✨ AI Matching</span>
         <i>→</i>
-        <span className="home-flow__accent">📊 94% Match</span>
+        <span className="home-flow__accent">📊 Ranked fit</span>
         <i>→</i>
         <span>💼 Opportunity</span>
       </div>
@@ -173,7 +173,7 @@ export default function Home() {
             never ranked for them — then apply into the dark.
           </p>
           <ul className="home-bullets">
-            <li>Search through hundreds of listings</li>
+            <li>Search through endless listings</li>
             <li>Apply to irrelevant roles</li>
             <li>Spend hours searching</li>
             <li>Never know which roles actually fit your skills</li>
@@ -184,8 +184,8 @@ export default function Home() {
           <article className="home-stat-card">
             <span className="home-stat-card__icon home-stat-card__icon--blue">📭</span>
             <div>
-              <strong>50+ applications</strong>
-              <p>sent without ever knowing if they fit.</p>
+              <strong>Blind applications</strong>
+              <p>sent without knowing whether the role actually fits.</p>
             </div>
           </article>
           <div className="home-stat-card__arrow">↓</div>
@@ -241,7 +241,7 @@ export default function Home() {
           {MATCHES.map((job) => (
             <article key={job.title} className="home-match">
               <div className="home-match__top">
-                <span className="home-match__pct">● {job.pct}</span>
+                <span className="home-match__pct">● {job.fitLabel}</span>
                 <span className="home-match__domain">{job.domain}</span>
               </div>
               <h3>{job.title}</h3>
@@ -324,24 +324,22 @@ export default function Home() {
             </div>
           </dl>
         </div>
-        <article className="home-id-card">
+        <article className="home-id-card" aria-label="Example profile layout">
           <div className="home-id-card__head">
             <span className="home-id-card__avatar" aria-hidden="true">
-              A
+              You
             </span>
             <div>
-              <strong>Aarav Sharma</strong>
-              <p>Engineering • B.Tech CSE</p>
+              <strong>Your profile</strong>
+              <p>Engineering • student</p>
             </div>
             <span className="home-chip home-chip--verified">Verified</span>
           </div>
-          <p className="home-match__why-label">Match score</p>
-          <p className="home-id-card__score">
-            <span>94</span>/100
+          <p className="home-match__why-label">How matching works</p>
+          <p className="home-id-card__meta home-id-card__meta--lede">
+            We read your resume, skills, and proof-of-work score, then rank open
+            roles in Engineering, Business, and Healthcare.
           </p>
-          <div className="home-id-card__bar" aria-hidden="true">
-            <i style={{ width: "94%" }} />
-          </div>
           <p className="home-match__why-label">Skills</p>
           <div className="home-match__skills">
             <span>React</span>
@@ -352,8 +350,7 @@ export default function Home() {
           <div className="home-match__skills">
             <span>Engineering</span>
           </div>
-          <p className="home-id-card__meta">2 internships • 3 projects</p>
-          <p className="home-id-card__meta">✓ resume.pdf</p>
+          <p className="home-id-card__meta">Resume and profile links on file</p>
         </article>
       </section>
     </div>

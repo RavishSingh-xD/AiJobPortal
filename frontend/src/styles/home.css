@@ -660,8 +660,13 @@
 
 .home-id-card__meta {
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: rgba(148, 163, 184, 0.95);
   margin: 0.35rem 0 0;
+}
+
+.home-id-card__meta--lede {
+  line-height: 1.55;
+  margin-bottom: 0.75rem;
 }
 
 @media (max-width: 900px) {

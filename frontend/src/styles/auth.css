@@ -173,6 +173,13 @@
   padding: 0.35rem 0.65rem;
 }
 
+.auth-promo__footnote {
+  margin: 1.25rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: rgba(148, 163, 184, 0.92);
+}
+
 .auth-promo__stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
