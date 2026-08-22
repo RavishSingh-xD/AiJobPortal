@@ -457,6 +457,13 @@ select.filter-input option {
   border-radius: var(--radius-sm);
 }
 
+.form-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
 .form-link__button {
   background: none;
   border: 0;

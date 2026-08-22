@@ -16,7 +16,9 @@ export default function VerifyEmail() {
   const [resending, setResending] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState(
-    presetEmail ? "Enter the code we sent to your email." : ""
+    presetEmail
+      ? "Enter the code we sent to your email. If you don't see it, check your spam or junk folder."
+      : ""
   );
 
   const handleVerify = async (e) => {
@@ -44,7 +46,7 @@ export default function VerifyEmail() {
     setResending(true);
     try {
       await resendSignupCode(email);
-      setInfo("A new code is on its way.");
+      setInfo("A new code is on its way. Check your inbox and spam folder if it doesn't appear.");
     } catch (err) {
       setError(err.message || "Could not resend the code. Try again.");
     } finally {
@@ -60,7 +62,7 @@ export default function VerifyEmail() {
             <h1 className="glass-card__title">Verify your email</h1>
             <p className="glass-card__subtitle">
               Enter the confirmation code from your inbox to activate your
-              account.
+              account. If it&apos;s not there, check your spam or junk folder.
             </p>
           </div>
 
@@ -98,6 +100,10 @@ export default function VerifyEmail() {
                 disabled={loading || resending}
                 autoComplete="one-time-code"
               />
+              <p className="form-hint">
+                Codes sometimes land in spam or promotions — worth a quick look
+                there before you resend.
+              </p>
             </div>
             <AnimatedButton type="submit" loading={loading} disabled={resending}>
               {loading ? "Verifying…" : "Verify email"}

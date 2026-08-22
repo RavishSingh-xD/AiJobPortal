@@ -37,7 +37,8 @@ export default function ResetPassword() {
           <div className="glass-card__header">
             <h1 className="glass-card__title">Choose a new password</h1>
             <p className="glass-card__subtitle">
-              Enter the code from your email and a new password.
+              Enter the code from your email and a new password. If you don&apos;t
+              see the email, check your spam or junk folder.
             </p>
           </div>
 
@@ -74,6 +75,10 @@ export default function ResetPassword() {
                 disabled={loading}
                 autoComplete="one-time-code"
               />
+              <p className="form-hint">
+                Reset codes can end up in spam or junk — check there if your
+                inbox is empty.
+              </p>
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="password">
