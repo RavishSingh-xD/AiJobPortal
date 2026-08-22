@@ -9,12 +9,10 @@ import {
   listSavedJobs,
   createSavedSearch,
 } from "../services/apiClient";
+import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
-import PageHeader from "../components/PageHeader";
-import EmptyState from "../components/EmptyState";
-import Surface from "../components/Surface";
-import { MotionListItem } from "../components/motionConfig";
+import { LoadingPulse } from "../components/motionConfig";
 import { apiErrorMessage } from "../utils/errors";
 import { getSubdomainSuggestions, DOMAIN_SKILL_EXAMPLES } from "../utils/subdomainSuggestions";
 
@@ -24,10 +22,11 @@ const MAX_SKILL_TAGS = 5;
 const MAX_POLL_ATTEMPTS = 40;
 
 const stateVariants = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 0, scale: 0.92 },
   visible: {
     opacity: 1,
-    transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+    scale: 1,
+    transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
   },
 };
 
@@ -87,8 +86,18 @@ function JobCard({
   onCompareToggle,
 }) {
   return (
-    <MotionListItem index={index} className="match-listing-card">
-      <h3 className="match-listing-card__title">{job.title}</h3>
+    <GlassCard className="glass-card--compact" delay={index * 0.05}>
+      <h3
+        style={{
+          fontSize: "1.25rem",
+          fontWeight: 700,
+          letterSpacing: "-0.02em",
+          marginBottom: "0.375rem",
+          color: "var(--text-primary)",
+        }}
+      >
+        {job.title}
+      </h3>
       {onCompareToggle && job.canonical_id ? (
         <label className="compare-check" style={{ marginBottom: "0.5rem" }}>
           <input
@@ -99,18 +108,34 @@ function JobCard({
           Compare
         </label>
       ) : null}
-      <p className="match-listing-card__meta">
+      <p
+        style={{
+          fontSize: "0.9375rem",
+          color: "var(--text-secondary)",
+          marginBottom: "0.75rem",
+        }}
+      >
         {job.company}
         {job.company && job.location ? " · " : ""}
         {job.location}
       </p>
       <SkillTags skills={job.required_skills} />
-      <p className="match-listing-card__meta">
+      <p
+        style={{
+          fontSize: "0.8125rem",
+          color: "var(--text-muted)",
+          marginTop: "0.75rem",
+          marginBottom: "1rem",
+        }}
+      >
         {[job.employment_type, job.source].filter(Boolean).join(" · ")}
       </p>
       <div className="job-card__actions">
-        <AnimatedButton className="btn--compact" onClick={onGetMatched}>
-          Get matched
+        <AnimatedButton
+          className="btn--compact"
+          onClick={onGetMatched}
+        >
+          Get Matched
         </AnimatedButton>
         <AnimatedButton
           secondary
@@ -123,7 +148,7 @@ function JobCard({
         </AnimatedButton>
       </div>
       {saveError && <div className="form-error">{saveError}</div>}
-    </MotionListItem>
+    </GlassCard>
   );
 }
 
@@ -411,13 +436,14 @@ export default function JobListings() {
     <div className="page page--dashboard">
       <div className="dashboard job-listings">
         <NavBar />
-        <PageHeader
-          label="Browse"
-          title="Find roles"
-          subtitle="Browse opportunities by domain, role type, and skill."
-        />
+        <GlassCard className="glass-card--compact" hover={false}>
+          <div className="glass-card__header" style={{ marginBottom: "1.5rem" }}>
+            <h1 className="glass-card__title">Find best roles for you</h1>
+            <p className="glass-card__subtitle">
+              Browse opportunities by domain, role type, and skill
+            </p>
+          </div>
 
-        <Surface hover={false} className="app-panel">
           <div className="listings-filters">
             <div className="form-group" style={{ flex: "1 1 160px", marginBottom: 0 }}>
               <label className="form-label" htmlFor="domain">
@@ -508,69 +534,108 @@ export default function JobListings() {
               </AnimatedButton>
             </div>
           )}
-        </Surface>
+        </GlassCard>
 
-        <AnimatePresence mode="wait">
+        <div style={{ marginTop: "1.5rem" }}>
+          <AnimatePresence mode="wait">
             {uiState === "loading" && (
-              <motion.div key="loading" variants={stateVariants} initial="hidden" animate="visible" exit="hidden">
-                <EmptyState variant="loading" loading title="Finding roles" />
+              <motion.div
+                key="loading"
+                className="success-state"
+                variants={stateVariants}
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+              >
+                <LoadingPulse>
+                  <div className="success-state__icon" aria-hidden="true">
+                    ⏳
+                  </div>
+                </LoadingPulse>
+                <h2 className="success-state__title">Finding the best roles for you</h2>
               </motion.div>
             )}
 
             {uiState === "harvesting" && (
-              <motion.div key="harvesting" variants={stateVariants} initial="hidden" animate="visible" exit="hidden">
-                <EmptyState
-                  variant="harvesting"
-                  loading
-                  title={`Finding ${harvestDomain || domain} roles`}
-                  text={
-                    harvestTimedOut
-                      ? "This is taking longer than usual — try searching again in a moment."
-                      : harvestMessage
-                  }
-                  action={
-                    harvestTimedOut ? (
-                      <AnimatedButton onClick={() => fetchJobs({ reset: true })}>
-                        Try again
-                      </AnimatedButton>
-                    ) : null
-                  }
-                />
+              <motion.div
+                key="harvesting"
+                className="success-state"
+                variants={stateVariants}
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+              >
+                <LoadingPulse>
+                  <div className="success-state__icon" aria-hidden="true">
+                    ✨
+                  </div>
+                </LoadingPulse>
+                <h2 className="success-state__title">
+                  Finding {harvestDomain || domain} roles for you
+                </h2>
+                <p className="success-state__text">
+                  {harvestTimedOut
+                    ? "This is taking longer than usual — try searching again in a moment"
+                    : harvestMessage}
+                </p>
+                {harvestTimedOut && (
+                  <AnimatedButton onClick={() => fetchJobs({ reset: true })}>
+                    Try again
+                  </AnimatedButton>
+                )}
               </motion.div>
             )}
 
             {uiState === "empty" && (
-              <motion.div key="empty" variants={stateVariants} initial="hidden" animate="visible" exit="hidden">
-                <EmptyState
-                  title="No opportunities found"
-                  text="Try a different domain or skill filter."
-                />
+              <motion.div
+                key="empty"
+                className="success-state"
+                variants={stateVariants}
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+              >
+                <div className="success-state__icon" aria-hidden="true">
+                  🔍
+                </div>
+                <h2 className="success-state__title">No opportunities found</h2>
+                <p className="success-state__text">
+                  Try a different domain or skill filter to discover more
+                  opportunities.
+                </p>
               </motion.div>
             )}
 
             {uiState === "error" && (
-              <motion.div key="error" variants={stateVariants} initial="hidden" animate="visible" exit="hidden">
-                <EmptyState
-                  variant="error"
-                  title="Could not load roles"
-                  text="We couldn't load opportunities right now."
-                  action={
-                    <AnimatedButton onClick={() => fetchJobs({ reset: true })}>
-                      Try again
-                    </AnimatedButton>
-                  }
-                />
+              <motion.div
+                key="error"
+                className="success-state"
+                variants={stateVariants}
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+              >
+                <div className="success-state__icon" aria-hidden="true">
+                  ⚠️
+                </div>
+                <h2 className="success-state__title">Something went wrong</h2>
+                <p className="success-state__text">
+                  We couldn&apos;t load opportunities right now.
+                </p>
+                <AnimatedButton onClick={() => fetchJobs({ reset: true })}>
+                  Try again
+                </AnimatedButton>
               </motion.div>
             )}
 
             {uiState === "results" && (
               <motion.div
                 key="results"
-                className="ledger"
+                style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.3 }}
               >
                 {jobs.map((job, index) => {
                   const id = job.canonical_id;
@@ -593,6 +658,7 @@ export default function JobListings() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
 
         {uiState === "results" && nextToken && (
           <div style={{ marginTop: "1.25rem", textAlign: "center" }}>

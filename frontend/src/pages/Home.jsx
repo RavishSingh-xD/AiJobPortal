@@ -1,7 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import Reveal, { RevealItem } from "../components/Reveal";
-import { staggerContainer, fadeUp } from "../components/motionConfig";
 
 const STEPS = [
   {
@@ -74,19 +71,18 @@ const MATCHES = [
 
 function HomeNav({ onLogin, onStart, onHow, onWhy }) {
   return (
-    <motion.header
-      className="home-nav"
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-    >
+    <header className="home-nav">
       <div className="home-nav__brand">
-        <img src="/avyukt-logo.png" alt="" />
+        <img
+          src="/avyukt-logo.png"
+          alt="Avyukt Logo"
+          style={{ width: "2rem", height: "2rem", borderRadius: "6px", objectFit: "contain" }}
+        />
         Avyukt
       </div>
       <nav className="home-nav__links" aria-label="Page">
         <button type="button" className="home-nav__link" onClick={onHow}>
-          How it works
+          How It Works
         </button>
         <button type="button" className="home-nav__link" onClick={onWhy}>
           Why Avyukt
@@ -97,10 +93,10 @@ function HomeNav({ onLogin, onStart, onHow, onWhy }) {
           Log in
         </button>
         <button type="button" className="home-btn home-btn--primary" onClick={onStart}>
-          Get started
+          Get Started
         </button>
       </div>
-    </motion.header>
+    </header>
   );
 }
 
@@ -117,62 +113,64 @@ export default function Home() {
     <div className="page page--home">
       <HomeNav onLogin={goLogin} onStart={goStart} onHow={goHow} onWhy={goWhy} />
 
-      <motion.section
-        className="home-hero"
-        variants={staggerContainer}
-        initial="hidden"
-        animate="visible"
-      >
-        <motion.div className="home-hero__visual" variants={fadeUp}>
-          <div className="home-hero__mark">
-            <img src="/avyukt-logo.png" alt="" />
+      <section className="home-hero">
+        <div className="home-hero__visual">
+          <div className="home-orb" aria-hidden="true">
+            <span className="home-orb__ring home-orb__ring--1" />
+            <span className="home-orb__ring home-orb__ring--2" />
+            <div className="home-orb__tile" style={{ padding: "0.85rem", overflow: "hidden" }}>
+              <img
+                src="/avyukt-logo.png"
+                alt="Avyukt Logo"
+                style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "0.85rem" }}
+              />
+            </div>
           </div>
-          <span className="home-hero__index">Avyukt / 2026</span>
-        </motion.div>
-        <motion.div className="home-hero__copy" variants={fadeUp}>
-          <p className="home-kicker">Opportunity matching</p>
+          <span className="home-chip home-chip--verified">✓ Verified</span>
+        </div>
+        <div className="home-hero__copy">
+          <p className="home-kicker">AI-powered opportunity matching</p>
           <h1 className="home-hero__title">
-            Find work that <span>fits you.</span>
+            Find work that actually <span>fits you.</span>
           </h1>
           <p className="home-lede">
-            Ranked roles across Engineering, Business, and Healthcare — matched to
-            your skills, interests, and career goals.
+            AI-powered opportunity matching built around your skills, interests
+            and career goals.
           </p>
           <div className="home-hero__cta">
             <button type="button" className="home-btn home-btn--primary" onClick={goStart}>
-              Start profile
+              Find My Opportunities →
             </button>
             <button type="button" className="home-btn home-btn--ghost" onClick={goHow}>
-              How it works
+              See How It Works ↓
             </button>
           </div>
-          <div className="home-hero__meta">
-            <span><strong>Skill-ranked</strong> listings</span>
-            <span><strong>Verified</strong> students</span>
-            <span><strong>3</strong> domains</span>
+          <div className="home-hero__badges">
+            <span className="home-chip">Skill-ranked</span>
+            <span className="home-chip">Verified students</span>
           </div>
-        </motion.div>
-      </motion.section>
+        </div>
+      </section>
 
-      <Reveal className="home-flow" aria-hidden="true">
-        <span>Profile</span>
-        <i>/</i>
-        <span>Skills</span>
-        <i>/</i>
-        <span>Match</span>
-        <i>/</i>
-        <span className="home-flow__accent">Rank</span>
-        <i>/</i>
-        <span>Apply</span>
-      </Reveal>
+      <div className="home-flow" aria-hidden="true">
+        <span>👤 Student Profile</span>
+        <i>→</i>
+        <span>🧠 Skills</span>
+        <i>→</i>
+        <span>✨ AI Matching</span>
+        <i>→</i>
+        <span className="home-flow__accent">📊 Ranked fit</span>
+        <i>→</i>
+        <span>💼 Opportunity</span>
+      </div>
 
-      <Reveal className="home-section home-problem">
+      <section className="home-section home-problem">
         <div className="home-problem__copy">
           <p className="home-kicker home-kicker--accent">The problem</p>
           <h2 className="home-h2">Stop applying randomly.</h2>
           <p className="home-lede">
-            Students spend weeks hunting listings that were never ranked for them —
-            then apply into the dark.
+            Students spend weeks hunting opportunities across listings that were
+            never ranked for them — then apply into the dark.
           </p>
           <ul className="home-bullets">
             <li>Search through endless listings</li>
@@ -184,66 +182,66 @@ export default function Home() {
         </div>
         <div className="home-problem__stack">
           <article className="home-stat-card">
-            <span className="home-stat-card__index">01</span>
+            <span className="home-stat-card__icon home-stat-card__icon--blue">📭</span>
             <div>
               <strong>Blind applications</strong>
-              <p>Sent without knowing whether the role actually fits.</p>
+              <p>sent without knowing whether the role actually fits.</p>
             </div>
           </article>
+          <div className="home-stat-card__arrow">↓</div>
           <article className="home-stat-card">
-            <span className="home-stat-card__index">02</span>
+            <span className="home-stat-card__icon home-stat-card__icon--pink">◎</span>
             <div>
               <strong>Low relevance</strong>
-              <p>Roles that don&apos;t match your skills at all.</p>
+              <p>roles that don&apos;t match your skills at all.</p>
             </div>
           </article>
-          <article className="home-stat-card">
-            <span className="home-stat-card__index">03</span>
+          <div className="home-stat-card__arrow">↓</div>
+          <article className="home-stat-card home-stat-card--glow">
+            <span className="home-stat-card__icon home-stat-card__icon--gold">⏳</span>
             <div>
               <strong>Hours wasted</strong>
-              <p>Searching, applying, and waiting to hear back.</p>
+              <p>searching, applying, and waiting to hear back.</p>
             </div>
           </article>
         </div>
-      </Reveal>
+      </section>
 
-      <Reveal as="p" className="home-better">There&apos;s a better way.</Reveal>
+      <p className="home-better">There&apos;s a better way.</p>
 
-      <Reveal className="home-section" id="how-it-works" stagger>
-        <p className="home-kicker">Process</p>
+      <section className="home-section" id="how-it-works">
+        <p className="home-kicker">How Avyukt works</p>
         <h2 className="home-h2">From profile to opportunity.</h2>
         <p className="home-lede">
-          Six steps between you and work that actually fits.
+          Six simple steps between you and work that actually fits.
         </p>
         <div className="home-steps">
           {STEPS.map((step) => (
-            <RevealItem key={step.n} className="home-step">
+            <article key={step.n} className="home-step">
               <span className="home-step__n">{step.n}</span>
-              <div>
-                <h3>{step.title}</h3>
-                <p>{step.text}</p>
-              </div>
-            </RevealItem>
+              <h3>{step.title}</h3>
+              <p>{step.text}</p>
+            </article>
           ))}
         </div>
-      </Reveal>
+      </section>
 
-      <Reveal className="home-section">
+      <section className="home-section">
         <p className="home-kicker">Matching</p>
         <h2 className="home-h2">
           Not just jobs.
           <br />
-          <span className="home-accent-text">The right jobs.</span>
+          <span className="home-gradient-text">The right jobs.</span>
         </h2>
         <p className="home-lede">
-          Every opportunity is ranked against your profile — focus on roles that
-          genuinely fit.
+          Every opportunity is ranked against your profile — so you can focus
+          on the roles that genuinely fit.
         </p>
         <div className="home-matches">
           {MATCHES.map((job) => (
             <article key={job.title} className="home-match">
               <div className="home-match__top">
-                <span className="home-match__pct">{job.fitLabel}</span>
+                <span className="home-match__pct">● {job.fitLabel}</span>
                 <span className="home-match__domain">{job.domain}</span>
               </div>
               <h3>{job.title}</h3>
@@ -259,53 +257,57 @@ export default function Home() {
                 ))}
               </ul>
               <button type="button" className="home-btn home-btn--primary home-btn--sm" onClick={goStart}>
-                Get matched
+                Get matched →
               </button>
             </article>
           ))}
         </div>
-      </Reveal>
+      </section>
 
-      <Reveal className="home-section" id="why-avyukt">
+      <section className="home-section" id="why-avyukt">
         <p className="home-kicker home-kicker--accent">Why Avyukt</p>
         <div className="home-why">
           <div>
-            <h3>Personalized</h3>
+            <h3 className="home-gradient-text">Personalized</h3>
             <p>Your opportunities should reflect your profile.</p>
           </div>
           <div>
-            <h3>Intelligent</h3>
+            <h3 className="home-gradient-text">Intelligent</h3>
             <p>Find relevant roles instead of scrolling endlessly.</p>
           </div>
           <div>
-            <h3>Verified</h3>
+            <h3 className="home-gradient-text">Verified</h3>
             <p>Trust matters when opportunities are involved.</p>
           </div>
         </div>
-      </Reveal>
+      </section>
 
-      <Reveal className="home-section home-cta-panel">
-        <h2 className="home-h2 home-h2--center">
-          Your next opportunity
-          <br />
-          <span className="home-accent-text">is out there.</span>
-        </h2>
-        <p className="home-lede home-lede--center">Build your profile. Get ranked.</p>
-        <button type="button" className="home-btn home-btn--primary" onClick={goStart}>
-          Create profile
-        </button>
-      </Reveal>
+      <section className="home-section home-cta-panel">
+        <div className="home-cta-panel__inner">
+          <h2 className="home-h2 home-h2--center">
+            Your next
+            <br />
+            opportunity
+            <br />
+            <span className="home-gradient-text">is out there.</span>
+          </h2>
+          <p className="home-lede home-lede--center">Let Avyukt help you find it.</p>
+          <button type="button" className="home-btn home-btn--primary" onClick={goStart}>
+            Create Your Profile →
+          </button>
+        </div>
+      </section>
 
-      <Reveal className="home-section home-profile">
+      <section className="home-section home-profile">
         <div className="home-profile__copy">
           <p className="home-kicker">Your profile</p>
           <h2 className="home-h2">
-            What Avyukt understands
-            <span className="home-accent-text"> about you.</span>
+            Here&apos;s what Avyukt understands{" "}
+            <span className="home-gradient-text">about you.</span>
           </h2>
           <p className="home-lede">
-            Resume, skills, and proof of work — matching that isn&apos;t a keyword
-            lottery.
+            Avyukt reads your resume, skills, and proof of work so matching
+            isn&apos;t a keyword lottery.
           </p>
           <dl className="home-facts">
             <div>
@@ -324,15 +326,17 @@ export default function Home() {
         </div>
         <article className="home-id-card" aria-label="Example profile layout">
           <div className="home-id-card__head">
-            <span className="home-id-card__avatar" aria-hidden="true">You</span>
+            <span className="home-id-card__avatar" aria-hidden="true">
+              You
+            </span>
             <div>
               <strong>Your profile</strong>
-              <p>Engineering · student</p>
+              <p>Engineering • student</p>
             </div>
-            <span className="home-id-card__badge">Verified</span>
+            <span className="home-chip home-chip--verified">Verified</span>
           </div>
           <p className="home-match__why-label">How matching works</p>
-          <p className="home-id-card__meta">
+          <p className="home-id-card__meta home-id-card__meta--lede">
             We read your resume, skills, and proof-of-work score, then rank open
             roles in Engineering, Business, and Healthcare.
           </p>
@@ -348,7 +352,7 @@ export default function Home() {
           </div>
           <p className="home-id-card__meta">Resume and profile links on file</p>
         </article>
-      </Reveal>
+      </section>
     </div>
   );
 }

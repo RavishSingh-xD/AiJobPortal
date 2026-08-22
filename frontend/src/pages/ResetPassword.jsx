@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { confirmPasswordReset } from "../services/authService";
-import AuthFormShell from "../components/AuthFormShell";
-import { MotionSubmit } from "../components/AnimatedButton";
+import GlassCard from "../components/GlassCard";
+import AnimatedButton from "../components/AnimatedButton";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -31,68 +31,81 @@ export default function ResetPassword() {
   };
 
   return (
-    <AuthFormShell>
-      <h1 className="auth-form-card__title">New password</h1>
-      <p className="auth-form-card__subtitle">
-        Enter the code from your email and a new password. Check spam if the
-        email isn&apos;t in your inbox.
-      </p>
+    <div className="page page--auth">
+      <div className="page-inner">
+        <GlassCard>
+          <div className="glass-card__header">
+            <h1 className="glass-card__title">Choose a new password</h1>
+            <p className="glass-card__subtitle">
+              Enter the code from your email and a new password. If you don&apos;t
+              see the email, check your spam or junk folder.
+            </p>
+          </div>
 
-      {error && <div className="auth-error">{error}</div>}
+          {error && <div className="form-error">{error}</div>}
 
-      <form onSubmit={handleSubmit}>
-        <div className="auth-field">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            className="auth-input auth-input--no-icon"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@college.edu"
-            required
-            disabled={loading}
-          />
-        </div>
-        <div className="auth-field">
-          <label htmlFor="code">Reset code</label>
-          <input
-            id="code"
-            className="auth-input auth-input--no-icon"
-            type="text"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="6-digit code"
-            required
-            disabled={loading}
-            autoComplete="one-time-code"
-          />
-          <p className="form-hint">
-            Reset codes can end up in spam or junk — check there if your inbox is empty.
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                className="form-input"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@college.edu"
+                required
+                disabled={loading}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="code">
+                Reset code
+              </label>
+              <input
+                id="code"
+                className="form-input"
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="6-digit code"
+                required
+                disabled={loading}
+                autoComplete="one-time-code"
+              />
+              <p className="form-hint">
+                Reset codes can end up in spam or junk — check there if your
+                inbox is empty.
+              </p>
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="password">
+                New password
+              </label>
+              <input
+                id="password"
+                className="form-input"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 8 characters"
+                required
+                minLength={8}
+                disabled={loading}
+              />
+            </div>
+            <AnimatedButton type="submit" loading={loading}>
+              {loading ? "Updating…" : "Reset password"}
+            </AnimatedButton>
+          </form>
+
+          <p className="form-link">
+            Back to <Link to="/login">log in</Link>
           </p>
-        </div>
-        <div className="auth-field">
-          <label htmlFor="password">New password</label>
-          <input
-            id="password"
-            className="auth-input auth-input--no-icon"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 characters"
-            required
-            minLength={8}
-            disabled={loading}
-          />
-        </div>
-        <MotionSubmit disabled={loading}>
-          {loading ? "Updating…" : "Reset password"}
-        </MotionSubmit>
-      </form>
-
-      <p className="auth-footer">
-        Back to <Link to="/login">log in</Link>
-      </p>
-    </AuthFormShell>
+        </GlassCard>
+      </div>
+    </div>
   );
 }

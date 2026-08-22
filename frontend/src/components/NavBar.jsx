@@ -1,16 +1,8 @@
 import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { motion, LayoutGroup } from "framer-motion";
 import { getUserProfile, logoutUser } from "../services/authService";
+import GlassCard from "./GlassCard";
 import AnimatedButton from "./AnimatedButton";
-
-const LINKS = [
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/jobs", label: "Find Roles" },
-  { to: "/applications", label: "Applications" },
-  { to: "/search-alerts", label: "Alerts" },
-  { to: "/saved-jobs", label: "Saved" },
-];
 
 export default function NavBar() {
   const navigate = useNavigate();
@@ -42,43 +34,53 @@ export default function NavBar() {
   };
 
   return (
-    <header className="dashboard-topbar">
+    <GlassCard className="glass-card--compact dashboard-topbar" hover={false}>
       <div className="dashboard-topbar__brand">
-        <img
-          src="/avyukt-logo.png"
-          alt=""
-          className="dashboard-topbar__logo-img"
-          width={28}
-          height={28}
-        />
+        <img src="/avyukt-logo.png" alt="Avyukt Logo" className="dashboard-topbar__logo-img" style={{ width: '2rem', height: '2rem', borderRadius: 'var(--radius-sm)' }} />
         Avyukt
       </div>
-      <LayoutGroup>
       <nav className="navbar__links" aria-label="Main">
-        {LINKS.map((link) => (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            className={({ isActive }) =>
-              `navbar__link${isActive ? " navbar__link--active" : ""}`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && (
-                  <motion.span
-                    className="navbar__indicator"
-                    layoutId="nav-indicator"
-                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                  />
-                )}
-                <span className="navbar__link-text">{link.label}</span>
-              </>
-            )}
-          </NavLink>
-        ))}
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) =>
+            `navbar__link${isActive ? " navbar__link--active" : ""}`
+          }
+        >
+          Dashboard
+        </NavLink>
+        <NavLink
+          to="/jobs"
+          className={({ isActive }) =>
+            `navbar__link${isActive ? " navbar__link--active" : ""}`
+          }
+        >
+          Find Roles
+        </NavLink>
+        <NavLink
+          to="/applications"
+          className={({ isActive }) =>
+            `navbar__link${isActive ? " navbar__link--active" : ""}`
+          }
+        >
+          Applications
+        </NavLink>
+        <NavLink
+          to="/search-alerts"
+          className={({ isActive }) =>
+            `navbar__link${isActive ? " navbar__link--active" : ""}`
+          }
+        >
+          Alerts
+        </NavLink>
+        <NavLink
+          to="/saved-jobs"
+          className={({ isActive }) =>
+            `navbar__link${isActive ? " navbar__link--active" : ""}`
+          }
+        >
+          Saved
+        </NavLink>
       </nav>
-      </LayoutGroup>
       <div className="dashboard-topbar__actions">
         {name && <span className="dashboard-topbar__email">{name}</span>}
         <AnimatedButton
@@ -90,6 +92,6 @@ export default function NavBar() {
           {loading ? "Signing out…" : "Log out"}
         </AnimatedButton>
       </div>
-    </header>
+    </GlassCard>
   );
 }

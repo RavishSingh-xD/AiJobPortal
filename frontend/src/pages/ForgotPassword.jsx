@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { requestPasswordReset } from "../services/authService";
-import AuthFormShell from "../components/AuthFormShell";
-import { MotionSubmit } from "../components/AnimatedButton";
+import GlassCard from "../components/GlassCard";
+import AnimatedButton from "../components/AnimatedButton";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -25,36 +25,44 @@ export default function ForgotPassword() {
   };
 
   return (
-    <AuthFormShell>
-      <h1 className="auth-form-card__title">Forgot password</h1>
-      <p className="auth-form-card__subtitle">
-        We&apos;ll email a reset code if this address has an account.
-      </p>
+    <div className="page page--auth">
+      <div className="page-inner">
+        <GlassCard>
+          <div className="glass-card__header">
+            <h1 className="glass-card__title">Forgot password</h1>
+            <p className="glass-card__subtitle">
+              We&apos;ll email a reset code if this address has an account.
+            </p>
+          </div>
 
-      {error && <div className="auth-error">{error}</div>}
+          {error && <div className="form-error">{error}</div>}
 
-      <form onSubmit={handleSubmit}>
-        <div className="auth-field">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            className="auth-input auth-input--no-icon"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@college.edu"
-            required
-            disabled={loading}
-          />
-        </div>
-        <MotionSubmit disabled={loading}>
-          {loading ? "Sending…" : "Send reset code"}
-        </MotionSubmit>
-      </form>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                className="form-input"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@college.edu"
+                required
+                disabled={loading}
+              />
+            </div>
+            <AnimatedButton type="submit" loading={loading}>
+              {loading ? "Sending…" : "Send reset code"}
+            </AnimatedButton>
+          </form>
 
-      <p className="auth-footer">
-        Remembered it? <Link to="/login">Log in</Link>
-      </p>
-    </AuthFormShell>
+          <p className="form-link">
+            Remembered it? <Link to="/login">Log in</Link>
+          </p>
+        </GlassCard>
+      </div>
+    </div>
   );
 }

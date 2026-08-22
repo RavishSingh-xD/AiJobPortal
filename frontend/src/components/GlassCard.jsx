@@ -41,7 +41,7 @@ export default function GlassCard({
       animate="visible"
       whileHover={
         !reduced && hover && fineHover
-          ? { opacity: 0.96, transition: { duration: 0.15, ease: [0.16, 1, 0.3, 1] } }
+          ? { y: -2, transition: { type: "spring", stiffness: 420, damping: 32 } }
           : undefined
       }
     >

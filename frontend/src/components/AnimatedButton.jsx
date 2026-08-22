@@ -1,5 +1,4 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { EASE_OUT, SPRING } from "./motionConfig";
 
 export default function AnimatedButton({
   children,
@@ -21,30 +20,14 @@ export default function AnimatedButton({
 
   return (
     <motion.button
-      {...props}
       className={classes}
-      whileHover={interactive ? { y: -1 } : undefined}
-      whileTap={interactive ? { y: 1, scale: 0.985 } : undefined}
-      transition={SPRING}
+      whileHover={interactive ? { scale: 1.02 } : undefined}
+      whileTap={interactive ? { scale: 0.97 } : undefined}
+      transition={{ type: "spring", stiffness: 420, damping: 32 }}
       disabled={loading || props.disabled}
+      {...props}
     >
       {loading && <span className="btn-spinner" aria-hidden="true" />}
-      <span className="btn__label">{children}</span>
-    </motion.button>
-  );
-}
-
-export function MotionSubmit({ children, disabled, className = "auth-submit" }) {
-  const reduced = useReducedMotion();
-  return (
-    <motion.button
-      type="submit"
-      className={className}
-      disabled={disabled}
-      whileHover={disabled || reduced ? undefined : { y: -1 }}
-      whileTap={disabled || reduced ? undefined : { y: 1, scale: 0.985 }}
-      transition={{ duration: 0.16, ease: EASE_OUT }}
-    >
       {children}
     </motion.button>
   );

@@ -13,11 +13,10 @@ import {
   createApplication,
   listSubdomains,
 } from "../services/apiClient";
+import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
-import PageHeader from "../components/PageHeader";
 import { EASE_OUT, DURATION, LoadingPulse, MotionListItem } from "../components/motionConfig";
-import Surface from "../components/Surface";
 import SkillGapReport from "../components/SkillGapReport";
 import AlmostThereSection from "../components/AlmostThereSection";
 import { apiErrorMessage } from "../utils/errors";
@@ -44,13 +43,9 @@ function isValidResumeFile(file) {
   return name.endsWith(".pdf") || name.endsWith(".docx");
 }
 
-function FileDropZone({ id, label, file, onChange, disabled }) {
+function FileDropZone({ id, label, icon, file, onChange, disabled }) {
   return (
-    <motion.div
-      className={`drop-zone ${file ? "drop-zone--has-file" : ""}`}
-      whileHover={disabled ? undefined : { y: -1 }}
-      transition={{ duration: 0.16, ease: EASE_OUT }}
-    >
+    <div className={`drop-zone ${file ? "drop-zone--has-file" : ""}`}>
       <input
         id={id}
         className="drop-zone__input"
@@ -60,14 +55,14 @@ function FileDropZone({ id, label, file, onChange, disabled }) {
         disabled={disabled}
       />
       <span className="drop-zone__icon" aria-hidden="true">
-        {file ? "OK" : "PDF"}
+        {file ? "✓" : icon}
       </span>
       {file ? (
         <span className="drop-zone__filename">{file.name}</span>
       ) : (
         <span className="drop-zone__label">{label}</span>
       )}
-    </motion.div>
+    </div>
   );
 }
 
@@ -661,12 +656,7 @@ export default function MatchWizard() {
     <div className="page page--dashboard">
       <div className="dashboard">
         <NavBar />
-        <PageHeader
-          label="Match"
-          title="AI matching"
-          subtitle="Resume scoring, domain test, and ranked recommendations."
-        />
-        <Surface hover={false} className="app-panel match-wizard-panel">
+        <GlassCard hover={false} className="glass-card--section">
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div key="profile" {...stepMotion}>
@@ -747,6 +737,7 @@ export default function MatchWizard() {
                     </label>
                     <FileDropZone
                       id="resume"
+                      icon="📄"
                       label="Upload a PDF or DOCX resume"
                       file={resume}
                       onChange={handleResumeChange}
@@ -1260,7 +1251,7 @@ export default function MatchWizard() {
               </motion.div>
             )}
           </AnimatePresence>
-        </Surface>
+        </GlassCard>
       </div>
     </div>
   );

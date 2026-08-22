@@ -1,13 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
 import { compareJobs } from "../services/apiClient";
+import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
-import PageHeader from "../components/PageHeader";
-import EmptyState from "../components/EmptyState";
-import Surface from "../components/Surface";
-import { EASE_OUT } from "../components/motionConfig";
 import { apiErrorMessage } from "../utils/errors";
 
 const MAX_COMPARE = 4;
@@ -22,22 +18,12 @@ function PowBar({ powBar }) {
   return (
     <div className="compare-pow">
       <div className="compare-pow__bar">
-        <motion.div
-          className="compare-pow__fill"
-          initial={{ width: 0 }}
-          animate={{ width: `${yourWidth}%` }}
-          transition={{ duration: 0.55, ease: EASE_OUT }}
-        />
-        <motion.div
-          className="compare-pow__marker"
-          initial={{ left: 0, opacity: 0 }}
-          animate={{ left: `${reqWidth}%`, opacity: 1 }}
-          transition={{ duration: 0.55, ease: EASE_OUT }}
-        />
+        <div className="compare-pow__fill" style={{ width: `${yourWidth}%` }} />
+        <div className="compare-pow__marker" style={{ left: `${reqWidth}%` }} />
       </div>
-      <p className="compare-pow__label tabular-nums">
+      <p className="compare-pow__label">
         You {powBar.yourPowScore} / needs {powBar.requiredPowScore}
-        {powBar.meetsRequirement ? " · pass" : ` · gap ${powBar.gap}`}
+        {powBar.meetsRequirement ? " ✓" : ` (gap ${powBar.gap})`}
       </p>
     </div>
   );
@@ -102,21 +88,18 @@ export default function CompareRoles() {
     <div className="page page--dashboard">
       <div className="dashboard">
         <NavBar />
-        <PageHeader
-          label="Compare"
-          title="Role comparison"
-          subtitle={`Side-by-side view for ${domain} roles you selected.`}
-        />
+        <GlassCard hover={false} className="glass-card--section">
+          <div className="glass-card__header">
+            <h1 className="glass-card__title">Compare roles</h1>
+            <p className="glass-card__subtitle">
+              Side-by-side view for {domain} roles you selected.
+            </p>
+          </div>
 
-        {uiState === "loading" && (
-          <EmptyState variant="loading" loading title="Loading comparison" />
-        )}
-        {uiState === "error" && (
-          <EmptyState variant="error" title="Comparison unavailable" text={error} />
-        )}
+          {uiState === "loading" && <p className="compare-muted">Loading comparison…</p>}
+          {uiState === "error" && <div className="form-error">{error}</div>}
 
-        {uiState === "ready" && (
-          <Surface hover={false} flush className="app-panel app-panel--flush">
+          {uiState === "ready" && (
             <div className="compare-table-wrap">
               <table className="compare-table">
                 <thead>
@@ -151,14 +134,14 @@ export default function CompareRoles() {
                 </tbody>
               </table>
             </div>
-          </Surface>
-        )}
+          )}
 
-        <div style={{ marginTop: "1.25rem" }}>
-          <AnimatedButton secondary type="button" className="btn--compact" onClick={() => navigate(-1)}>
-            Back
-          </AnimatedButton>
-        </div>
+          <div style={{ marginTop: "1.25rem" }}>
+            <AnimatedButton secondary type="button" onClick={() => navigate(-1)}>
+              Back
+            </AnimatedButton>
+          </div>
+        </GlassCard>
       </div>
     </div>
   );

@@ -2,9 +2,6 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser, getUserProfile, PendingVerificationError } from "../services/authService";
 import AuthMarketingPanel from "../components/AuthMarketingPanel";
-import { MotionSubmit } from "../components/AnimatedButton";
-import { motion } from "framer-motion";
-import { fadeUp, staggerContainer } from "../components/motionConfig";
 import { getPostLoginPath } from "../utils/verification";
 
 function MailIcon() {
@@ -79,17 +76,10 @@ export default function Login() {
       <div className="auth-split">
         <AuthMarketingPanel />
 
-        <motion.div
-          className="auth-form-column"
-          variants={staggerContainer}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.div variants={fadeUp}>
-            <Link to="/" className="auth-back">← Back to Avyukt</Link>
-          </motion.div>
+        <div className="auth-form-column">
+          <Link to="/" className="auth-back">← Back to Avyukt</Link>
 
-          <motion.div className="auth-form-card" variants={fadeUp}>
+          <div className="auth-form-card">
             <h1 className="auth-form-card__title">Welcome back</h1>
             <p className="auth-form-card__subtitle">
               Sign in to access your opportunities dashboard
@@ -146,16 +136,16 @@ export default function Login() {
                 Forgot password?
               </Link>
 
-              <MotionSubmit disabled={loading}>
+              <button type="submit" className="auth-submit" disabled={loading}>
                 {loading ? "Signing in…" : "Log in"}
-              </MotionSubmit>
+              </button>
             </form>
 
             <p className="auth-footer">
               Don&apos;t have an account? <Link to="/signup">Sign up</Link>
             </p>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
     </div>
   );

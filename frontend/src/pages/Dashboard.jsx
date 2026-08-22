@@ -8,12 +8,9 @@ import {
   getProfile,
   updateProfile,
 } from "../services/apiClient";
+import GlassCard from "../components/GlassCard";
 import AnimatedButton from "../components/AnimatedButton";
 import NavBar from "../components/NavBar";
-import PageHeader from "../components/PageHeader";
-import CountUp from "../components/CountUp";
-import ProgressRail from "../components/ProgressRail";
-import Surface from "../components/Surface";
 import { EASE_OUT, DURATION } from "../components/motionConfig";
 import { apiErrorMessage } from "../utils/errors";
 
@@ -33,6 +30,7 @@ function formatVerificationStatus(status) {
 }
 
 function StatCard({
+  icon,
   label,
   value,
   delay,
@@ -44,12 +42,11 @@ function StatCard({
   const reduced = useReducedMotion();
 
   return (
-    <Surface
-      hover={false}
-      delay={delay}
+    <GlassCard
       className={`glass-card--stat glass-card--clickable stat-card${
         expanded ? " stat-card--open" : ""
       }`}
+      delay={delay}
     >
       <button
         type="button"
@@ -57,12 +54,12 @@ function StatCard({
         onClick={onToggle}
         aria-expanded={expanded}
       >
-        <div className="stat-card__icon" aria-hidden="true" />
+        <div className="stat-card__icon" aria-hidden="true">
+          {icon}
+        </div>
         <div className="stat-card__summary">
           <p className="stat-card__label">{label}</p>
-          <p className="stat-card__value">
-            {typeof value === "number" ? <CountUp value={value} /> : value}
-          </p>
+          <p className="stat-card__value">{value}</p>
         </div>
         <motion.span
           className="stat-card__chevron"
@@ -89,7 +86,7 @@ function StatCard({
           </motion.div>
         )}
       </AnimatePresence>
-    </Surface>
+    </GlassCard>
   );
 }
 
@@ -212,18 +209,13 @@ export default function Dashboard() {
         <NavBar />
 
         <div className="dashboard-welcome">
-          <PageHeader
-            label="Dashboard"
-            title={`Welcome back${userAttributes.name ? `, ${userAttributes.name}` : ""}`}
-            subtitle={
-              userAttributes.verificationStatus
-                ? undefined
-                : "Your command center for roles, matches, and applications."
-            }
-            className="dashboard-welcome__header"
-          />
+          <h1 className="dashboard-welcome__title">
+            Welcome back{userAttributes.name ? `, ${userAttributes.name}` : ""}
+          </h1>
           {userAttributes.verificationStatus && (
-            <span className={`status-badge status-badge--${badge.variant}`}>
+            <span
+              className={`status-badge status-badge--${badge.variant}`}
+            >
               {badge.label}
             </span>
           )}
@@ -233,6 +225,7 @@ export default function Dashboard() {
 
         <div className="dashboard-stats">
           <StatCard
+            icon="📋"
             label="Applications"
             value={applicationsCount == null ? "…" : applicationsCount}
             delay={0.1}
@@ -247,7 +240,8 @@ export default function Dashboard() {
             </AnimatedButton>
           </StatCard>
           <StatCard
-            label="Saved"
+            icon="⭐"
+            label="Saved Opportunities"
             value={savedCount == null ? "…" : savedCount}
             delay={0.2}
             expanded={openCard.saved}
@@ -261,12 +255,13 @@ export default function Dashboard() {
             </AnimatedButton>
           </StatCard>
           <StatCard
-            label="Profile completion"
+            icon="✨"
+            label="Profile Completion"
             value={
               profileUiState === "loading"
                 ? "…"
                 : profileUiState === "ready"
-                  ? <CountUp value={completionPct} suffix="%" />
+                  ? `${completionPct}%`
                   : "—"
             }
             delay={0.3}
@@ -274,11 +269,18 @@ export default function Dashboard() {
             onToggle={() => toggleCard("profile")}
             extraCollapsed={
               profileUiState === "ready" ? (
-                <ProgressRail
-                  slim
-                  value={completionPct}
-                  label="Profile completion"
-                />
+                <div
+                  className="profile-progress profile-progress--slim"
+                  role="progressbar"
+                  aria-valuenow={completionPct}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
+                  <div
+                    className="profile-progress__bar"
+                    style={{ width: `${completionPct}%` }}
+                  />
+                </div>
               ) : null
             }
           >
@@ -287,10 +289,18 @@ export default function Dashboard() {
             )}
             {profileUiState === "ready" && (
               <>
-                <ProgressRail
-                  value={completionPct}
-                  label="Profile completion"
-                />
+                <div
+                  className="profile-progress"
+                  role="progressbar"
+                  aria-valuenow={completionPct}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
+                  <div
+                    className="profile-progress__bar"
+                    style={{ width: `${completionPct}%` }}
+                  />
+                </div>
                 <form className="profile-form" onSubmit={handleSaveProfile}>
                   <div className="form-group" style={{ marginBottom: "0.75rem" }}>
                     <label className="form-label" htmlFor="linkedinUrl">
@@ -346,36 +356,45 @@ export default function Dashboard() {
         </div>
 
         <div className="dashboard-cta-grid">
-          <Surface delay={0.06} className="app-panel" hover>
+          <GlassCard className="glass-card--section" delay={0.4}>
             <div className="dashboard-coming-soon">
-              <p className="micro-label">Browse</p>
-              <h2 className="dashboard-coming-soon__title">Find roles manually</h2>
+              <div className="dashboard-coming-soon__icon" aria-hidden="true">
+                🔍
+              </div>
+              <h2 className="dashboard-coming-soon__title">
+                Browse roles yourself
+              </h2>
               <p className="dashboard-coming-soon__text">
-                Search opportunities across Engineering, Healthcare, and Business.
+                Search opportunities across Engineering, Healthcare,
+                and Business.
               </p>
               <div className="dashboard-cta-grid__action">
-                <AnimatedButton secondary className="btn--compact" onClick={() => navigate("/jobs")}>
-                  Browse roles
+                <AnimatedButton secondary onClick={() => navigate("/jobs")}>
+                  Browse Roles
                 </AnimatedButton>
               </div>
             </div>
-          </Surface>
+          </GlassCard>
 
-          <Surface delay={0.1} className="app-panel dashboard-cta-card--featured" hover>
+          <GlassCard className="glass-card--section dashboard-cta-card--featured" delay={0.5}>
             <div className="dashboard-coming-soon">
-              <p className="micro-label">Match</p>
-              <h2 className="dashboard-coming-soon__title">AI-ranked recommendation</h2>
+              <div className="dashboard-coming-soon__icon" aria-hidden="true">
+                ✨
+              </div>
+              <h2 className="dashboard-coming-soon__title">
+                Get matched by AI
+              </h2>
               <p className="dashboard-coming-soon__text">
-                Submit your resume, take a quick domain test, and get a ranked
-                best-fit recommendation.
+                Submit your resume, take a quick domain test, and get a
+                ranked best-fit recommendation.
               </p>
               <div className="dashboard-cta-grid__action">
-                <AnimatedButton className="btn--compact" onClick={() => navigate("/match")}>
-                  Start matching
+                <AnimatedButton onClick={() => navigate("/match")}>
+                  Start Matching
                 </AnimatedButton>
               </div>
             </div>
-          </Surface>
+          </GlassCard>
         </div>
       </div>
     </div>

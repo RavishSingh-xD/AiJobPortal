@@ -29,11 +29,13 @@ function ProtectedRoute({ children }) {
       .finally(() => setChecking(false));
   }, []);
 
-          if (checking) {
+  if (checking) {
     return (
       <div className="page">
         <div className="page-inner">
-          <p className="micro-label" style={{ textAlign: "center" }}>Loading</p>
+          <p style={{ textAlign: "center", color: "var(--text-secondary)" }}>
+            Loading…
+          </p>
         </div>
       </div>
     );
@@ -60,11 +62,13 @@ function VerifiedRoute({ children }) {
       .finally(() => setChecking(false));
   }, []);
 
-          if (checking) {
+  if (checking) {
     return (
       <div className="page">
         <div className="page-inner">
-          <p className="micro-label" style={{ textAlign: "center" }}>Loading</p>
+          <p style={{ textAlign: "center", color: "var(--text-secondary)" }}>
+            Loading…
+          </p>
         </div>
       </div>
     );
@@ -175,8 +179,15 @@ function AnimatedRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AnimatedRoutes />
-    </BrowserRouter>
+    <>
+      <div className="app-background" aria-hidden="true">
+        <div className="liquid-blob liquid-blob--1" />
+        <div className="liquid-blob liquid-blob--2" />
+        <div className="liquid-blob liquid-blob--3" />
+      </div>
+      <BrowserRouter>
+        <AnimatedRoutes />
+      </BrowserRouter>
+    </>
   );
 }
