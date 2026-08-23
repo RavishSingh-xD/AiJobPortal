@@ -235,7 +235,7 @@ def expand_skill_needles(domain_key: str, skill_query: str) -> Set[str]:
         if query in label or label in query or query.replace(" ", "_") == slug:
             needles.add(label)
             needles.add(slug.replace("_", " "))
-        for term in entry.get("searchTerms") or []:
-            needles.add(str(term).lower())
+            for term in entry.get("searchTerms") or []:
+                needles.add(str(term).lower())
 
     return needles

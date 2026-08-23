@@ -46,6 +46,11 @@ from urllib.error import HTTPError, URLError
 import boto3
 from botocore.exceptions import ClientError
 
+try:
+    from lambdas.match import listing_utils as lu
+except ImportError:
+    import listing_utils as lu
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -81,7 +86,8 @@ DOMAIN_TABLE_MAP = {
 EMPLOYMENT_INTERNSHIP = "Internship"
 EMPLOYMENT_JOB = "Job"
 CLOSED_STATUSES = {"closed", "expired", "inactive"}
-SCAN_LIMIT = 100
+MAX_SCAN_PAGES = 25
+SCAN_PAGE_SIZE = 100
 GROUP_CAP = 20
 
 LISTING_FIELDS = (
@@ -159,69 +165,47 @@ def _as_number(value, default=0):
 
 
 def _is_open_listing(item: dict) -> bool:
-    """Mirror get_matched_jobs / start_domain_test exactly."""
-    status = item.get("status") or item.get("display_status") or ""
-    return str(status).strip().lower() not in CLOSED_STATUSES
+    """Delegate to shared match listing helpers."""
+    return lu.is_open_listing(item)
 
 
-def _skill_matches(item: dict, skill_query: str) -> bool:
-    """Mirror list_jobs / get_matched_jobs (case-insensitive substring)."""
-    if not skill_query:
-        return True
-    needle = skill_query.strip().lower()
-    if not needle:
-        return True
-    required_skills = item.get("required_skills")
-    if isinstance(required_skills, str):
-        required_skills = [required_skills]
-    if required_skills:
-        for skill in required_skills:
-            if skill is None:
-                continue
-            if needle in str(skill).lower():
-                return True
-    harvest_skill = str(item.get("harvest_skill") or "").strip().lower()
-    if harvest_skill and needle in harvest_skill:
-        return True
-    title = str(item.get("title") or "").strip().lower()
-    if title and needle in title:
-        return True
-    if not required_skills and not harvest_skill:
-        return False
-    return False
+def _skill_matches(item: dict, skill_query: str, needles=None) -> bool:
+    """Mirror list_jobs / get_matched_jobs (expanded subdomain needles)."""
+    return lu.job_matches_skill(item, skill_query, needles)
 
 
 def _employment_type_key(employment_type):
-    if not employment_type:
-        return None
-    needle = str(employment_type).strip().lower()
-    if needle == EMPLOYMENT_INTERNSHIP.lower():
-        return "internships"
-    if needle == EMPLOYMENT_JOB.lower():
-        return "jobs"
-    return None
+    return lu.employment_type_key(employment_type)
 
 
 def _normalize_required_skills(required_skills):
-    if isinstance(required_skills, str):
-        required_skills = [required_skills]
-    if not isinstance(required_skills, list):
-        return []
-    return [str(s).strip() for s in required_skills if s is not None and str(s).strip()]
+    return lu.normalize_required_skills(required_skills)
 
 
 def _public_listing(item: dict) -> dict:
-    listing = {}
-    for field in LISTING_FIELDS:
-        if field in item:
-            listing[field] = item[field]
-    listing["required_skills"] = _normalize_required_skills(item.get("required_skills"))
-    return listing
+    listing = lu.public_listing(item)
+    # Recommendation payload keeps the historical field set (no harvest_skill/source).
+    public = {
+        field: listing[field] for field in LISTING_FIELDS if field in listing
+    }
+    public["required_skills"] = listing.get("required_skills", [])
+    return public
 
 
 def _scan_jobs(table_name: str):
     table = _dynamodb.Table(table_name)
-    return table.scan(Limit=SCAN_LIMIT)
+    items = []
+    start_key = None
+    for _ in range(MAX_SCAN_PAGES):
+        scan_kwargs = {"Limit": SCAN_PAGE_SIZE}
+        if start_key:
+            scan_kwargs["ExclusiveStartKey"] = start_key
+        response = table.scan(**scan_kwargs)
+        items.extend(response.get("Items") or [])
+        start_key = response.get("LastEvaluatedKey")
+        if not start_key:
+            break
+    return {"Items": items}
 
 
 def _collect_matched_listings(domain: str, skill: str, pow_score: float):
@@ -231,18 +215,12 @@ def _collect_matched_listings(domain: str, skill: str, pow_score: float):
         return []
 
     scan_response = _scan_jobs(table_name)
+    needles = lu.expand_skill_needles(domain, skill)
     matched = []
     for item in scan_response.get("Items") or []:
         if not isinstance(item, dict):
             continue
-        if not _is_open_listing(item):
-            continue
-        if not _skill_matches(item, skill):
-            continue
-        min_pow = _as_number(item.get("min_pow_score"), default=0)
-        if min_pow > pow_score:
-            continue
-        if _employment_type_key(item.get("employment_type")) is None:
+        if not lu.qualifies_for_match(item, skill, pow_score, needles):
             continue
         matched.append(_public_listing(item))
     return matched[: GROUP_CAP * 2]
@@ -250,21 +228,7 @@ def _collect_matched_listings(domain: str, skill: str, pow_score: float):
 
 def _skill_overlap(required_skills, skill: str, domain: str) -> float:
     """Fraction of job skill tags that match the session skill or domain."""
-    tags = _normalize_required_skills(required_skills)
-    if not tags:
-        return 0.0
-    hits = 0
-    for tag in tags:
-        if _skill_matches({"required_skills": [tag]}, skill) or _skill_matches({"required_skills": [tag]}, domain):
-            hits += 1
-            continue
-        # Also credit when the tag is a substring of the session skill/domain.
-        lower = tag.lower()
-        if (skill and lower in skill.strip().lower()) or (
-            domain and lower in domain.strip().lower()
-        ):
-            hits += 1
-    return hits / len(tags)
+    return lu.skill_overlap(required_skills, skill, domain)
 
 
 def _rank_jobs(listings, pow_score: float, score_percent: float, skill: str, domain: str):

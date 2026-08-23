@@ -50,6 +50,8 @@ CONFLICT_MESSAGE = "Complete the domain test before viewing matches."
 
 GROUP_CAP = 20
 ALMOST_CAP = 10
+MAX_SCAN_PAGES = 25
+SCAN_PAGE_SIZE = 100
 
 _dynamodb = boto3.resource("dynamodb", region_name=REGION)
 _sessions_table = _dynamodb.Table(MATCH_SESSIONS_TABLE)
@@ -99,8 +101,21 @@ def _get_authenticated_user_id(event):
 
 
 def _scan_jobs(table_name: str):
+    """Paginate through the domain table so skill filters aren't limited to
+    the first 100 raw items (which are often closed / unrelated)."""
     table = _dynamodb.Table(table_name)
-    return table.scan(Limit=lu.SCAN_LIMIT)
+    items = []
+    start_key = None
+    for _ in range(MAX_SCAN_PAGES):
+        scan_kwargs = {"Limit": SCAN_PAGE_SIZE}
+        if start_key:
+            scan_kwargs["ExclusiveStartKey"] = start_key
+        response = table.scan(**scan_kwargs)
+        items.extend(response.get("Items") or [])
+        start_key = response.get("LastEvaluatedKey")
+        if not start_key:
+            break
+    return {"Items": items}
 
 
 def lambda_handler(event, context):
@@ -145,6 +160,7 @@ def lambda_handler(event, context):
         return _response(500, {"error": "Could not load matched jobs"})
 
     items = scan_response.get("Items") or []
+    skill_needles = lu.expand_skill_needles(domain, skill)
     partitioned = lu.partition_matches(
         items,
         skill,
@@ -152,6 +168,7 @@ def lambda_handler(event, context):
         pow_score,
         group_cap=GROUP_CAP,
         almost_cap=ALMOST_CAP,
+        skill_needles=skill_needles,
     )
     skill_gap_report = lu.build_skill_gap_report(
         partitioned["matched_flat"],
