@@ -45,7 +45,7 @@ MATCH_SESSIONS_TABLE = os.environ.get("MATCH_SESSIONS_TABLE", "match_sessions")
 REGION = os.environ.get("AWS_REGION", "ap-south-1")
 
 FORBIDDEN_MESSAGE = "Forbidden"
-STATUS_REQUIRED = "test_completed"
+STATUS_REQUIRED = {"test_completed", "recommendation_complete"}
 CONFLICT_MESSAGE = "Complete the domain test before viewing matches."
 
 GROUP_CAP = 20
@@ -142,7 +142,7 @@ def lambda_handler(event, context):
     if session_item.get("userId") != user_id:
         return _response(403, {"error": FORBIDDEN_MESSAGE})
 
-    if session_item.get("status") != STATUS_REQUIRED:
+    if session_item.get("status") not in STATUS_REQUIRED:
         return _response(409, {"error": CONFLICT_MESSAGE})
 
     domain = session_item.get("domain")

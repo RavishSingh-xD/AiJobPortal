@@ -102,21 +102,31 @@ def _find_listings(domain: str, canonical_ids: list[str]) -> dict[str, dict]:
     if not table_name:
         return {}
 
+    wanted = set(canonical_ids)
+    found = {}
     table = _dynamodb.Table(table_name)
+    start_key = None
     try:
-        response = table.scan(Limit=lu.SCAN_LIMIT)
+        for _ in range(lu.MAX_SCAN_PAGES):
+            scan_kwargs = {"Limit": lu.SCAN_PAGE_SIZE}
+            if start_key:
+                scan_kwargs["ExclusiveStartKey"] = start_key
+            response = table.scan(**scan_kwargs)
+            for item in response.get("Items") or []:
+                if not isinstance(item, dict):
+                    continue
+                canonical_id = item.get("canonical_id")
+                if canonical_id in wanted:
+                    found[canonical_id] = item
+            if len(found) >= len(wanted):
+                break
+            start_key = response.get("LastEvaluatedKey")
+            if not start_key:
+                break
     except ClientError as e:
         logger.error("Scan failed for compare domain=%s: %s", domain, e)
         return {}
 
-    wanted = set(canonical_ids)
-    found = {}
-    for item in response.get("Items") or []:
-        if not isinstance(item, dict):
-            continue
-        canonical_id = item.get("canonical_id")
-        if canonical_id in wanted:
-            found[canonical_id] = item
     return found
 
 

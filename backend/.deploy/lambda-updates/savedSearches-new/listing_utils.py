@@ -5,12 +5,22 @@ almost-there roles, and structured skill gap reports.
 
 from __future__ import annotations
 
+import re
 from decimal import Decimal
 from urllib.parse import quote_plus
 
 EMPLOYMENT_INTERNSHIP = "Internship"
 EMPLOYMENT_JOB = "Job"
 CLOSED_STATUSES = {"closed", "expired", "inactive"}
+CLOSED_DISPLAY_KEYWORDS = (
+    "closed",
+    "expired",
+    "inactive",
+    "filled",
+    "no longer",
+    "unavailable",
+    "removed",
+)
 
 DOMAIN_TABLE_MAP = {
     "Engineering": "jobs_engineering",
@@ -28,12 +38,15 @@ LISTING_FIELDS = (
     "is_fallback",
     "employment_type",
     "required_skills",
+    "harvest_skill",
     "source",
 )
 
 ALMOST_THERE_POW_GAP = 5
 ALMOST_THERE_MIN_SKILL_OVERLAP = 0.4
 SCAN_LIMIT = 100
+MAX_SCAN_PAGES = 25
+SCAN_PAGE_SIZE = 100
 
 
 def as_number(value, default=0):
@@ -50,8 +63,17 @@ def as_number(value, default=0):
 
 
 def is_open_listing(item: dict) -> bool:
-    status = item.get("status") or item.get("display_status") or ""
-    return str(status).strip().lower() not in CLOSED_STATUSES
+    status = str(item.get("status") or "").strip().lower()
+    display = str(item.get("display_status") or "").strip().lower()
+
+    if status in CLOSED_STATUSES or display in CLOSED_STATUSES:
+        return False
+
+    for keyword in CLOSED_DISPLAY_KEYWORDS:
+        if keyword in display:
+            return False
+
+    return True
 
 
 def normalize_required_skills(required_skills):
@@ -62,21 +84,81 @@ def normalize_required_skills(required_skills):
     return [str(skill).strip() for skill in required_skills if skill and str(skill).strip()]
 
 
-def skill_matches(required_skills, skill_query: str) -> bool:
-    if not skill_query:
+def expand_skill_needles(domain: str, skill_query: str) -> set[str]:
+    """
+    Expand a portal subdomain / skill label into match needles.
+
+    Catalog labels like "Machine Learning / AI" or "Full Stack Development"
+    rarely appear verbatim in job tags, so we tokenize the label the same
+    way browse/list_jobs does for search terms.
+    """
+    _ = domain  # kept for call-site compatibility with list_jobs signature
+    query = (skill_query or "").strip().lower()
+    if not query:
+        return set()
+
+    needles: set[str] = {query}
+    for part in re.split(r"[/,&]+", query):
+        part = part.strip()
+        if part:
+            needles.add(part)
+    for token in re.findall(r"[a-z0-9]+", query):
+        if len(token) >= 3:
+            needles.add(token)
+
+    return {needle for needle in needles if needle}
+
+
+def _text_matches_needles(text: str, needles: set[str]) -> bool:
+    hay = (text or "").strip().lower()
+    if not hay:
+        return False
+    for needle in needles:
+        if not needle:
+            continue
+        if needle in hay or hay in needle:
+            return True
+    return False
+
+
+def skill_matches(required_skills, skill_query: str, needles=None) -> bool:
+    if not skill_query or not str(skill_query).strip():
         return True
     if isinstance(required_skills, str):
         required_skills = [required_skills]
     if not required_skills:
         return False
-    needle = skill_query.strip().lower()
-    if not needle:
-        return True
+    active_needles = needles
+    if active_needles is None:
+        active_needles = expand_skill_needles("", skill_query)
+    if not active_needles:
+        active_needles = {skill_query.strip().lower()}
     for skill in required_skills:
         if skill is None:
             continue
-        if needle in str(skill).lower():
+        if _text_matches_needles(str(skill), active_needles):
             return True
+    return False
+
+
+def job_matches_skill(item: dict, skill_query: str, needles=None) -> bool:
+    """Match harvested sub-domain/skill against tags, stored harvest_skill, or title."""
+    if not skill_query or not str(skill_query).strip():
+        return True
+    active_needles = needles
+    if active_needles is None:
+        active_needles = expand_skill_needles("", skill_query)
+    if not active_needles:
+        active_needles = {skill_query.strip().lower()}
+
+    if skill_matches(item.get("required_skills"), skill_query, active_needles):
+        return True
+    harvest_skill = str(item.get("harvest_skill") or "")
+    if harvest_skill and _text_matches_needles(harvest_skill, active_needles):
+        return True
+    title = str(item.get("title") or "")
+    if title and _text_matches_needles(title, active_needles):
+        return True
     return False
 
 
@@ -131,31 +213,33 @@ def missing_skills_for_user(required_skills, skill: str, domain: str) -> list[st
     return [tag for tag in tags if not tag_matches_user(tag, skill, domain)]
 
 
-def qualifies_for_match(item: dict, skill: str, pow_score: float) -> bool:
+def qualifies_for_match(item: dict, skill: str, pow_score: float, needles=None) -> bool:
     if not is_open_listing(item):
         return False
     if employment_type_key(item.get("employment_type")) is None:
         return False
-    if not skill_matches(item.get("required_skills"), skill):
+    if not job_matches_skill(item, skill, needles):
         return False
     min_pow = as_number(item.get("min_pow_score"), default=0)
     return min_pow <= pow_score
 
 
-def build_almost_there_entry(item: dict, skill: str, domain: str, pow_score: float) -> dict | None:
+def build_almost_there_entry(
+    item: dict, skill: str, domain: str, pow_score: float, needles=None
+) -> dict | None:
     if not is_open_listing(item):
         return None
     group = employment_type_key(item.get("employment_type"))
     if group is None:
         return None
 
-    if qualifies_for_match(item, skill, pow_score):
+    if qualifies_for_match(item, skill, pow_score, needles):
         return None
 
     required = item.get("required_skills")
     min_pow = as_number(item.get("min_pow_score"), default=0)
     overlap = skill_overlap(required, skill, domain)
-    skill_match = skill_matches(required, skill)
+    skill_match = job_matches_skill(item, skill, needles)
     upgrade_steps = []
 
     if skill_match and min_pow > pow_score:
@@ -279,17 +363,21 @@ def partition_matches(
     pow_score: float,
     group_cap: int = 20,
     almost_cap: int = 10,
+    skill_needles=None,
 ) -> dict:
     internships = []
     jobs = []
     almost_internships = []
     almost_jobs = []
     matched_flat = []
+    needles = skill_needles
+    if needles is None:
+        needles = expand_skill_needles(domain, skill)
 
     for item in items:
         if not isinstance(item, dict):
             continue
-        if qualifies_for_match(item, skill, pow_score):
+        if qualifies_for_match(item, skill, pow_score, needles):
             listing = public_listing(item)
             matched_flat.append(listing)
             group = employment_type_key(item.get("employment_type"))
@@ -298,7 +386,7 @@ def partition_matches(
             elif group == "jobs":
                 jobs.append(listing)
         else:
-            almost = build_almost_there_entry(item, skill, domain, pow_score)
+            almost = build_almost_there_entry(item, skill, domain, pow_score, needles)
             if almost is None:
                 continue
             group = employment_type_key(item.get("employment_type"))

@@ -18,15 +18,18 @@ from moto import mock_aws
 USER_ID = "user-sub-123"
 
 
-def make_event(method="GET", body=None, sub=USER_ID):
+def make_event(method="GET", body=None, sub=USER_ID, email=None, name=None):
+    claims = {"sub": sub}
+    if email is not None:
+        claims["email"] = email
+    if name is not None:
+        claims["name"] = name
     event = {
         "requestContext": {
             "http": {"method": method},
             "authorizer": {
                 "jwt": {
-                    "claims": {
-                        "sub": sub,
-                    }
+                    "claims": claims
                 }
             },
         }
@@ -125,15 +128,24 @@ def test_get_user_id_missing_sub_raises(profile_module):
 # --- GET handler ---
 
 
-def test_get_no_existing_item(profile_module):
-    result = profile_module.handler(make_event("GET"), None)
+def test_get_no_existing_item_backfills_users_row(profile_module):
+    result = profile_module.handler(
+        make_event("GET", email="new@example.com", name="New User"),
+        None,
+    )
     assert result["statusCode"] == 200
     body = json.loads(result["body"])
     assert body["linkedinUrl"] == ""
     assert body["githubUrl"] == ""
     assert body["completionPct"] == 0
-    assert body["verificationStatus"] == ""
-    assert body["verificationType"] == ""
+    assert body["verificationStatus"] == "pending_review"
+    assert body["verificationType"] == "manual"
+    assert body["email"] == "new@example.com"
+    assert body["name"] == "New User"
+
+    stored = profile_module.users_table.get_item(Key={"userId": USER_ID})["Item"]
+    assert stored["email"] == "new@example.com"
+    assert stored["role"] == "student"
 
 
 def test_get_includes_verification_fields(profile_module):

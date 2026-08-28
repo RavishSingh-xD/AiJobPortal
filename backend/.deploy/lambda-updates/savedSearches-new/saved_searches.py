@@ -38,7 +38,8 @@ saved_searches_table = dynamodb.Table(SAVED_SEARCHES_TABLE_NAME)
 VALID_DOMAINS = {"Engineering", "Business", "Healthcare"}
 _DOMAIN_BY_LOWER = {domain.lower(): domain for domain in VALID_DOMAINS}
 MAX_SEEN_IDS = 200
-SCAN_LIMIT = 100
+MAX_SCAN_PAGES = 25
+SCAN_PAGE_SIZE = 100
 DOMAIN_TABLE_MAP = {
     "Engineering": "jobs_engineering",
     "Business": "jobs_business",
@@ -80,13 +81,13 @@ def _route_path(event: dict) -> str:
     return (event.get("rawPath") or event.get("path") or "").rstrip("/")
 
 
-def _matches_saved_search(item: dict, skill: str, employment_type: str) -> bool:
+def _matches_saved_search(item: dict, skill: str, employment_type: str, needles=None) -> bool:
     if not lu.is_open_listing(item):
         return False
     if employment_type:
         if str(item.get("employment_type") or "").strip().lower() != employment_type.strip().lower():
             return False
-    if skill and not lu.skill_matches(item.get("required_skills"), skill):
+    if skill and not lu.job_matches_skill(item, skill, needles):
         return False
     return True
 
@@ -96,12 +97,22 @@ def _scan_domain_jobs(domain: str):
     if not table_name:
         return []
     table = dynamodb.Table(table_name)
+    items = []
+    start_key = None
     try:
-        response = table.scan(Limit=SCAN_LIMIT)
+        for _ in range(MAX_SCAN_PAGES):
+            scan_kwargs = {"Limit": SCAN_PAGE_SIZE}
+            if start_key:
+                scan_kwargs["ExclusiveStartKey"] = start_key
+            response = table.scan(**scan_kwargs)
+            items.extend(response.get("Items") or [])
+            start_key = response.get("LastEvaluatedKey")
+            if not start_key:
+                break
     except ClientError as e:
         logger.warning("Scan failed for domain=%s: %s", domain, e)
         return []
-    return response.get("Items") or []
+    return items
 
 
 def _listing_preview(item: dict, domain: str) -> dict:
@@ -115,12 +126,13 @@ def _find_new_matches(search_item: dict) -> list[dict]:
     skill = (search_item.get("skill") or "").strip()
     employment_type = (search_item.get("employmentType") or "").strip()
     seen = set(search_item.get("seenCanonicalIds") or [])
+    needles = lu.expand_skill_needles(domain or "", skill) if skill else None
 
     matches = []
     for item in _scan_domain_jobs(domain):
         if not isinstance(item, dict):
             continue
-        if not _matches_saved_search(item, skill, employment_type):
+        if not _matches_saved_search(item, skill, employment_type, needles):
             continue
         canonical_id = item.get("canonical_id")
         if not canonical_id or canonical_id in seen:
