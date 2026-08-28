@@ -1,15 +1,22 @@
 """
-ID card name verification: PaddleOCR text + Groq name comparison.
+ID card name verification: OCR text + deterministic name matching.
 
-Compares the user's registered name (Cognito / Users table) against the name
-read from their uploaded ID card image.
+Decision rule is binary and rule-based (not a confidence/probability gate):
+every significant token of the registered name must appear in the OCR text
+(or in the extracted card name), after OCR-noise normalization.
+
+Groq is used only as an optional name extractor from OCR text. Its
+"confidence" score never decides accept/reject.
 """
+
+from __future__ import annotations
 
 import json
 import logging
 import os
 import re
-from typing import Any, Dict, Optional, Tuple
+import unicodedata
+from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -25,11 +32,27 @@ GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 GROQ_API_URL = os.environ.get(
     "GROQ_API_URL", "https://api.groq.com/openai/v1/chat/completions"
 )
-NAME_MATCH_MIN_CONFIDENCE = float(os.environ.get("NAME_MATCH_MIN_CONFIDENCE", "70"))
 NAME_VERIFICATION_ENABLED = os.environ.get("NAME_VERIFICATION_ENABLED", "true").lower() in (
     "1",
     "true",
     "yes",
+)
+# Ignore very short tokens (initials like "A" still allowed when len==1? we keep
+# single-letter tokens only if the registered name itself uses them).
+MIN_TOKEN_LEN = 2
+
+# Common OCR confusions → canonical latin letters.
+_OCR_CONFUSABLES = str.maketrans(
+    {
+        "0": "o",
+        "1": "l",
+        "5": "s",
+        "8": "b",
+        "@": "a",
+        "$": "s",
+        "|": "l",
+        "!": "i",
+    }
 )
 
 _ssm = boto3.client("ssm", region_name=REGION)
@@ -49,28 +72,104 @@ def _get_groq_api_key() -> Optional[str]:
         return None
 
 
-def _normalize_name_tokens(name: str) -> set:
-    if not name:
-        return set()
-    cleaned = re.sub(r"[^a-zA-Z\s]", " ", name.lower())
-    return {t for t in cleaned.split() if len(t) > 1}
+def normalize_name_text(value: str) -> str:
+    """Lowercase, strip accents/punctuation, fix common OCR letter swaps."""
+    if not value:
+        return ""
+    text = unicodedata.normalize("NFKD", str(value))
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    text = text.lower().translate(_OCR_CONFUSABLES)
+    text = re.sub(r"[^a-z\s]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
 
-def _heuristic_name_match(registered_name: str, ocr_text: str) -> Tuple[bool, str, float]:
-    """Token overlap fallback when Groq is unavailable."""
-    reg_tokens = _normalize_name_tokens(registered_name)
-    ocr_tokens = _normalize_name_tokens(ocr_text)
+def name_tokens(value: str, *, min_len: int = MIN_TOKEN_LEN) -> List[str]:
+    normalized = normalize_name_text(value)
+    if not normalized:
+        return []
+    tokens = [t for t in normalized.split(" ") if t]
+    # Keep short tokens only when the whole name is short (e.g. "Li Bo").
+    if any(len(t) >= min_len for t in tokens):
+        return [t for t in tokens if len(t) >= min_len]
+    return tokens
+
+
+def _token_present(token: str, haystack_tokens: Set[str], haystack_text: str) -> bool:
+    if token in haystack_tokens:
+        return True
+    # Contiguous substring for OCR glued/split noise (e.g. "priyeshbarhate").
+    if len(token) >= MIN_TOKEN_LEN and token in haystack_text.replace(" ", ""):
+        return True
+    # Allow 1-char OCR typo inside a long token via exact neighbor match.
+    if len(token) >= 4:
+        for hay in haystack_tokens:
+            if abs(len(hay) - len(token)) > 1:
+                continue
+            # Hamming-ish: at most one substitution, same length; or one insert/delete.
+            if _edit_distance_at_most_one(token, hay):
+                return True
+    return False
+
+
+def _edit_distance_at_most_one(a: str, b: str) -> bool:
+    if a == b:
+        return True
+    if abs(len(a) - len(b)) > 1:
+        return False
+    if len(a) == len(b):
+        diffs = sum(1 for x, y in zip(a, b) if x != y)
+        return diffs == 1
+    # Ensure a is shorter.
+    if len(a) > len(b):
+        a, b = b, a
+    i = j = 0
+    skipped = False
+    while i < len(a) and j < len(b):
+        if a[i] == b[j]:
+            i += 1
+            j += 1
+            continue
+        if skipped:
+            return False
+        skipped = True
+        j += 1
+    return True
+
+
+def deterministic_name_match(registered_name: str, *sources: str) -> Tuple[bool, str, float]:
+    """
+    Accept only when every registered name token is found in the combined
+    OCR / extracted-name sources. Confidence is informational only (0 or 100).
+    """
+    reg_tokens = name_tokens(registered_name)
     if not reg_tokens:
         return False, "registered_name_missing", 0.0
-    if not ocr_tokens:
+
+    combined = "\n".join(s for s in sources if s and str(s).strip())
+    haystack_text = normalize_name_text(combined)
+    if not haystack_text:
         return False, "ocr_empty", 0.0
 
-    overlap = reg_tokens & ocr_tokens
-    ratio = len(overlap) / len(reg_tokens)
-    matched = ratio >= 0.5 and len(overlap) >= 1
-    confidence = round(ratio * 100, 1)
-    reason = "heuristic_match" if matched else "heuristic_mismatch"
-    return matched, reason, confidence
+    haystack_tokens = set(name_tokens(haystack_text, min_len=1))
+    compact = haystack_text.replace(" ", "")
+
+    # Exact full-name equality or contiguous phrase.
+    reg_norm = normalize_name_text(registered_name)
+    if reg_norm and (reg_norm == haystack_text or reg_norm in haystack_text):
+        return True, "exact_name_match", 100.0
+    if reg_norm.replace(" ", "") and reg_norm.replace(" ", "") in compact:
+        return True, "exact_name_match_compact", 100.0
+
+    missing = [
+        token
+        for token in reg_tokens
+        if not _token_present(token, haystack_tokens, haystack_text)
+    ]
+    if missing:
+        return False, f"missing_tokens:{','.join(missing)}", 0.0
+
+    return True, "all_tokens_present", 100.0
 
 
 def _strip_json_fences(text: str) -> str:
@@ -113,27 +212,24 @@ def _call_groq(messages: list) -> Optional[str]:
         content = body["choices"][0]["message"]["content"]
         return content if isinstance(content, str) else None
     except (HTTPError, URLError, KeyError, json.JSONDecodeError, TimeoutError) as exc:
-        logger.warning("Groq name comparison failed: %s", exc)
+        logger.warning("Groq name extraction failed: %s", exc)
         return None
 
 
-def _groq_compare_names(registered_name: str, ocr_text: str) -> Optional[Dict[str, Any]]:
+def _groq_extract_name_on_card(registered_name: str, ocr_text: str) -> Optional[str]:
+    """Ask Groq only to extract the ID card name — never to decide match."""
     prompt = (
-        "You verify whether a person's registered name matches the name on their ID card.\n"
-        f"Registered name: {registered_name}\n"
-        f"OCR text from ID card:\n{ocr_text}\n\n"
-        "Rules:\n"
-        "- Allow minor OCR errors, missing middle names, and word order differences.\n"
-        "- Reject if the registered name clearly does not appear on the ID.\n"
-        "- Extract the best full name you see on the ID as nameOnCard.\n"
-        "Return ONLY JSON: "
-        '{"match": boolean, "nameOnCard": string, "confidence": number 0-100, "reason": string}'
+        "Extract the person's full name printed on this ID card from the OCR text.\n"
+        f"Registered name (context only, do not invent): {registered_name}\n"
+        f"OCR text:\n{ocr_text}\n\n"
+        "Return ONLY JSON: {\"nameOnCard\": string}\n"
+        "If no person name is visible, return {\"nameOnCard\": \"\"}."
     )
     raw = _call_groq(
         [
             {
                 "role": "system",
-                "content": "You compare names on ID documents. Respond with JSON only.",
+                "content": "You extract names from ID OCR text. Respond with JSON only.",
             },
             {"role": "user", "content": prompt},
         ]
@@ -144,29 +240,58 @@ def _groq_compare_names(registered_name: str, ocr_text: str) -> Optional[Dict[st
         parsed = json.loads(_strip_json_fences(raw))
         if not isinstance(parsed, dict):
             return None
-        return parsed
+        name = str(parsed.get("nameOnCard") or "").strip()
+        return name or None
     except json.JSONDecodeError:
-        logger.warning("Groq returned unparseable JSON for name comparison")
+        logger.warning("Groq returned unparseable JSON for name extraction")
         return None
 
 
 def _rekognition_ocr_s3(rekognition_client, bucket: str, key: str) -> str:
-    """Fallback OCR via Rekognition DetectText (no Paddle dependency)."""
+    """OCR via Rekognition DetectText (LINE + high-confidence WORDs)."""
     if rekognition_client is None:
         return ""
     try:
         response = rekognition_client.detect_text(
             Image={"S3Object": {"Bucket": bucket, "Name": key}}
         )
-        lines = [
-            item["DetectedText"]
-            for item in response.get("TextDetections", [])
-            if item.get("Type") == "LINE" and item.get("DetectedText")
-        ]
-        return "\n".join(lines)
     except Exception as exc:
         logger.warning("Rekognition DetectText failed for %s/%s: %s", bucket, key, exc)
         return ""
+
+    lines: List[str] = []
+    words: List[str] = []
+    for item in response.get("TextDetections", []) or []:
+        text = (item.get("DetectedText") or "").strip()
+        if not text:
+            continue
+        confidence = float(item.get("Confidence") or 0)
+        kind = item.get("Type")
+        # Keep only high-confidence detections to reduce OCR garbage.
+        if kind == "LINE" and confidence >= 80:
+            lines.append(text)
+        elif kind == "WORD" and confidence >= 85:
+            words.append(text)
+
+    if lines:
+        return "\n".join(lines)
+    return " ".join(words)
+
+
+def _merge_ocr_texts(*parts: str) -> str:
+    seen = set()
+    ordered: List[str] = []
+    for part in parts:
+        for line in str(part or "").splitlines():
+            cleaned = line.strip()
+            if not cleaned:
+                continue
+            key = normalize_name_text(cleaned)
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            ordered.append(cleaned)
+    return "\n".join(ordered)
 
 
 def verify_id_name(
@@ -177,10 +302,10 @@ def verify_id_name(
     rekognition_client=None,
 ) -> Dict[str, Any]:
     """
-    OCR the ID card and compare names.
+    OCR the ID card and compare names with deterministic rules.
 
     Returns dict with keys: match (bool), reason (str), nameOnCard (str),
-    confidence (float), ocrText (truncated preview), method (groq|heuristic|skipped).
+    confidence (float 0 or 100), ocrText (truncated preview), method (str).
     """
     if not NAME_VERIFICATION_ENABLED:
         return {
@@ -202,37 +327,34 @@ def verify_id_name(
             "method": "skipped",
         }
 
-    ocr_text = download_and_ocr_s3(s3_client, bucket, id_card_key)
-    if not ocr_text.strip():
-        ocr_text = _rekognition_ocr_s3(rekognition_client, bucket, id_card_key)
+    paddle_text = download_and_ocr_s3(s3_client, bucket, id_card_key)
+    rekognition_text = _rekognition_ocr_s3(rekognition_client, bucket, id_card_key)
+    ocr_text = _merge_ocr_texts(paddle_text, rekognition_text)
     ocr_preview = (ocr_text[:500] + "…") if len(ocr_text) > 500 else ocr_text
 
-    groq_result = _groq_compare_names(registered_name.strip(), ocr_text)
-    if groq_result is not None:
-        try:
-            confidence = float(groq_result.get("confidence", 0))
-        except (TypeError, ValueError):
-            confidence = 0.0
-        match = bool(groq_result.get("match")) and confidence >= NAME_MATCH_MIN_CONFIDENCE
-        name_on_card = str(groq_result.get("nameOnCard") or "").strip()
-        reason = str(groq_result.get("reason") or ("name_match" if match else "name_mismatch"))
-        if groq_result.get("match") and not match:
-            reason = "name_below_confidence_threshold"
-        return {
-            "match": match,
-            "reason": reason,
-            "nameOnCard": name_on_card,
-            "confidence": confidence,
-            "ocrText": ocr_preview,
-            "method": "groq",
-        }
+    name_on_card = _groq_extract_name_on_card(registered_name.strip(), ocr_text) or ""
+    method = "deterministic+groq_extract" if name_on_card else "deterministic"
 
-    matched, reason, confidence = _heuristic_name_match(registered_name, ocr_text)
+    matched, reason, confidence = deterministic_name_match(
+        registered_name.strip(),
+        ocr_text,
+        name_on_card,
+    )
+
     return {
         "match": matched,
         "reason": reason,
-        "nameOnCard": "",
+        "nameOnCard": name_on_card,
         "confidence": confidence,
         "ocrText": ocr_preview,
-        "method": "heuristic",
+        "method": method,
     }
+
+
+# Back-compat alias used by older tests / callers.
+def _heuristic_name_match(registered_name: str, ocr_text: str) -> Tuple[bool, str, float]:
+    return deterministic_name_match(registered_name, ocr_text)
+
+
+def _normalize_name_tokens(name: str) -> set:
+    return set(name_tokens(name))

@@ -35,6 +35,6 @@ aws lambda update-function-configuration \
   --timeout 120 \
   --memory-size 512 \
   --handler lambdas.verification.face_match_verification.lambda_handler \
-  --environment "Variables={VERIFICATION_BUCKET=aijobportal-verification-${ACCOUNT_ID},USERS_TABLE=Users,USER_POOL_ID=ap-south-1_s0f7Kwug8,SIMILARITY_THRESHOLD=85,NAME_MATCH_REQUIRED=true,NAME_VERIFICATION_ENABLED=true,GROQ_API_KEY_PARAM=/aijobportal/groq-api-key,GROQ_MODEL=openai/gpt-oss-120b}"
+  --environment "Variables={VERIFICATION_BUCKET=aijobportal-verification-${ACCOUNT_ID},USERS_TABLE=Users,USER_POOL_ID=ap-south-1_s0f7Kwug8,SIMILARITY_THRESHOLD=90,NAME_MATCH_REQUIRED=true,NAME_VERIFICATION_ENABLED=true,GROQ_API_KEY_PARAM=/aijobportal/groq-api-key,GROQ_MODEL=openai/gpt-oss-120b,OCR_MIN_LINE_CONFIDENCE=0.80}"
 
 echo "Deployed zip to $FUNCTION_NAME (Rekognition OCR fallback; PaddleOCR requires container deploy)."

@@ -21,7 +21,7 @@ logger.setLevel(logging.INFO)
 VERIFICATION_BUCKET = os.environ.get("VERIFICATION_BUCKET")
 USERS_TABLE = os.environ.get("USERS_TABLE", "Users")
 USER_POOL_ID = os.environ.get("USER_POOL_ID")
-SIMILARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "85"))
+SIMILARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "90"))
 NAME_MATCH_REQUIRED = os.environ.get("NAME_MATCH_REQUIRED", "true").lower() in (
     "1",
     "true",
